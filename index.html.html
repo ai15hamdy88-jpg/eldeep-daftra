@@ -1,0 +1,2708 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دفترة | نظام محاسبي متكامل</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F6F7;
+    --surface:#FFFFFF;
+    --surface-alt:#EEF3F3;
+    --border:#DEE6E7;
+    --border-soft:#EAEFEF;
+    --ink:#1D2B2A;
+    --ink-soft:#5E7371;
+    --ink-faint:#8CA09E;
+    --primary:#0E5C56;
+    --primary-dark:#0A423E;
+    --primary-soft:#E3EFEC;
+    --primary-softer:#F0F6F4;
+    --gold:#AD7F35;
+    --gold-soft:#F6EEDC;
+    --debit:#2E5F8A;
+    --debit-soft:#E7EEF5;
+    --credit:#A9702F;
+    --credit-soft:#F5EBE0;
+    --danger:#A34632;
+    --danger-soft:#F6E9E5;
+    --radius-s:6px;
+    --radius-m:10px;
+    --radius-l:16px;
+    --shadow-card:0 1px 2px rgba(20,40,38,0.06), 0 1px 0 rgba(20,40,38,0.04);
+    --topbar-h:62px;
+    --navbar-h:50px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    font-weight:400;
+    -webkit-font-smoothing:antialiased;
+  }
+  .num{
+    font-family:'IBM Plex Mono','IBM Plex Sans Arabic',monospace;
+    direction:ltr;
+    unicode-bidi:isolate;
+  }
+
+  /* ===== Layout shell ===== */
+  .shell{
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+  }
+
+  /* ===== Topbar ===== */
+  .topbar{
+    background:var(--surface);
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 24px;
+    height:var(--topbar-h);
+    position:sticky; top:0; z-index:21;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{
+    width:34px; height:34px; border-radius:9px;
+    background:linear-gradient(160deg, var(--primary), var(--primary-dark));
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:16px; letter-spacing:0;
+    box-shadow:0 2px 5px rgba(10,66,62,0.28);
+  }
+  .brand-text .name{ font-weight:700; font-size:16.5px; color:var(--ink); line-height:1.15; }
+  .brand-text .tag{ font-size:11.5px; color:var(--ink-faint); font-weight:400; }
+  .topbar-right{ display:flex; align-items:center; gap:18px; }
+  .company-chip{
+    display:flex; flex-direction:column; align-items:flex-end;
+    padding-inline-end:16px; border-inline-end:1px solid var(--border-soft);
+  }
+  .company-chip .c1{ font-size:12.5px; font-weight:600; color:var(--ink); }
+  .company-chip .c2{ font-size:11px; color:var(--ink-faint); }
+  .date-chip{
+    font-size:12px; color:var(--ink-soft);
+    background:var(--surface-alt); border-radius:20px; padding:7px 14px;
+    display:flex; align-items:center; gap:6px;
+  }
+  @media (max-width:760px){ .company-chip{ display:none; } }
+
+  /* ===== Top navigation bar (pages) ===== */
+  .navbar{
+    background:var(--surface);
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:stretch; gap:4px;
+    padding:0 20px;
+    height:var(--navbar-h);
+    overflow-x:auto; overflow-y:hidden;
+    position:sticky; top:var(--topbar-h); z-index:20;
+  }
+  .navbar::-webkit-scrollbar{ height:0; }
+  .nav-item{
+    display:flex; align-items:center; gap:8px; flex:none;
+    padding:0 15px; height:calc(100% - 10px); margin-top:5px;
+    color:var(--ink-soft); cursor:pointer; user-select:none;
+    font-size:13.5px; font-weight:700; white-space:nowrap;
+    border-radius:8px 8px 0 0;
+    border-bottom:2.5px solid transparent;
+    transition:background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .nav-item svg{ width:17px; height:17px; flex:none; }
+  .nav-item:hover{ background:var(--surface-alt); color:var(--ink); }
+  .nav-item.active{
+    color:#fff; font-weight:700;
+    background:linear-gradient(160deg, var(--primary), var(--primary-dark));
+    border-color:var(--gold);
+    box-shadow:0 2px 6px rgba(14,92,86,.28);
+  }
+  .nav-item.active:hover{ background:linear-gradient(160deg, var(--primary), var(--primary-dark)); color:#fff; }
+  .nav-item.nav-settings{ margin-inline-start:auto; }
+  @media (max-width:760px){ .nav-item .side-label{ display:none; } .nav-item{ padding:0 11px; } }
+
+  /* ===== Main content ===== */
+  .main{
+    padding:26px 30px 60px;
+    max-width:1180px;
+    width:100%;
+    margin:0 auto;
+  }
+  .page{ display:none; animation:fadein .22s ease; }
+  .page.active{ display:block; }
+  @keyframes fadein{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+
+  .page-head{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    margin-bottom:20px; flex-wrap:wrap; gap:12px;
+  }
+  .page-head h1{ font-size:21px; font-weight:700; margin:0 0 4px; color:var(--ink); }
+  .page-head p{ margin:0; font-size:12.5px; color:var(--ink-faint); }
+
+  .btn{
+    border:none; cursor:pointer; font-family:inherit;
+    border-radius:var(--radius-s); font-size:13px; font-weight:600;
+    padding:9px 16px; display:inline-flex; align-items:center; gap:7px;
+    transition:filter .12s ease, transform .06s ease;
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn-primary{ background:var(--primary); color:#fff; }
+  .btn-primary:hover{ filter:brightness(1.08); }
+  .btn-ghost{ background:var(--surface-alt); color:var(--ink-soft); }
+  .btn-ghost:hover{ background:var(--border-soft); color:var(--ink); }
+  .btn-danger-text{ background:none; color:var(--danger); padding:6px 8px; font-size:12.5px; }
+  .btn-sm{ padding:6px 11px; font-size:12px; }
+  .btn[disabled]{ opacity:.45; cursor:not-allowed; }
+
+  /* ===== Cards / tables ===== */
+  .card{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-m); box-shadow:var(--shadow-card);
+  }
+  .card-pad{ padding:18px 20px; }
+  .table-wrap{
+    overflow:auto;
+    max-height:calc(100vh - var(--topbar-h) - var(--navbar-h) - 230px);
+    border-radius:var(--radius-m);
+  }
+  table{ width:100%; border-collapse:separate; border-spacing:0; font-size:13px; }
+  thead th{
+    text-align:right; font-size:11.5px; font-weight:700; color:#fff;
+    background:linear-gradient(160deg, var(--primary), var(--primary-dark));
+    padding:10px 14px; border-bottom:1px solid var(--primary-dark);
+    white-space:nowrap;
+    position:sticky; top:0; z-index:10;
+  }
+  thead th:first-child{ border-top-right-radius:var(--radius-m); }
+  thead th:last-child{ border-top-left-radius:var(--radius-m); }
+  tbody td{ padding:10px 14px; border-bottom:1px solid var(--border-soft); color:var(--ink); }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:var(--primary-softer); }
+  td.num, th.num{ text-align:left; }
+  td.num.date-col{ text-align:right; }
+  tfoot td{ padding:11px 14px; font-weight:700; background:var(--surface-alt); border-top:1px solid var(--border); }
+
+  .pill{
+    display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px;
+    font-size:11px; font-weight:600; white-space:nowrap;
+  }
+  .pill-asset{ background:var(--debit-soft); color:var(--debit); }
+  .pill-liability{ background:var(--credit-soft); color:var(--credit); }
+  .pill-equity{ background:var(--gold-soft); color:var(--gold); }
+  .pill-revenue{ background:var(--primary-soft); color:var(--primary-dark); }
+  .pill-expense{ background:var(--danger-soft); color:var(--danger); }
+  .pill-group{ background:var(--surface-alt); color:var(--ink-faint); }
+  .bal-debit{ color:var(--debit); font-weight:700; font-size:14.5px; }
+  .bal-credit{ color:var(--credit); font-weight:700; font-size:14.5px; }
+  .acc-name{ font-weight:700; font-size:14.5px; color:var(--ink); }
+  .amt-num{ font-weight:700; font-size:14.5px; }
+
+  .kpi-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+  @media (max-width:700px){ .kpi-row{ grid-template-columns:1fr; } }
+  .kpi{
+    position:relative; overflow:hidden;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-m);
+    padding:16px 18px 16px 22px; box-shadow:var(--shadow-card);
+  }
+  .kpi::before{ content:''; position:absolute; inset-inline-start:0; top:0; bottom:0; width:5px; background:var(--ink-faint); }
+  .kpi .label{ font-size:11.5px; font-weight:700; color:var(--ink-faint); margin-bottom:9px; display:flex; align-items:center; gap:6px; }
+  .kpi .label svg{ width:14px; height:14px; flex:none; }
+  .kpi .value{ font-size:22px; font-weight:700; }
+  .kpi.kpi-debit{ background:var(--debit-soft); } .kpi.kpi-debit::before{ background:var(--debit); } .kpi.kpi-debit .label, .kpi.kpi-debit .value{ color:var(--debit); }
+  .kpi.kpi-credit{ background:var(--credit-soft); } .kpi.kpi-credit::before{ background:var(--credit); } .kpi.kpi-credit .label, .kpi.kpi-credit .value{ color:var(--credit); }
+  .kpi.kpi-ok{ background:var(--primary-soft); } .kpi.kpi-ok::before{ background:var(--primary); } .kpi.kpi-ok .label{ color:var(--primary-dark); } .kpi.kpi-ok .value{ color:var(--primary-dark); }
+  .kpi.kpi-bad{ background:var(--danger-soft); } .kpi.kpi-bad::before{ background:var(--danger); } .kpi.kpi-bad .label, .kpi.kpi-bad .value{ color:var(--danger); }
+  .kpi .value.debit{ color:var(--debit); }
+  .kpi .value.credit{ color:var(--credit); }
+  .kpi .value.ok{ color:var(--primary-dark); }
+  .kpi .value.bad{ color:var(--danger); }
+
+  .status-banner{
+    margin-top:16px; padding:12px 16px; border-radius:var(--radius-m);
+    font-size:13px; font-weight:600; display:flex; align-items:center; gap:9px;
+  }
+  .status-ok{ background:var(--primary-soft); color:var(--primary-dark); }
+  .status-bad{ background:var(--danger-soft); color:var(--danger); }
+
+  /* ===== tree ===== */
+  .tree-row{ display:flex; align-items:center; gap:10px; }
+  .tree-code{ font-family:'IBM Plex Mono'; direction:ltr; font-size:12.5px; color:var(--ink-faint); min-width:52px; }
+
+  /* ===== forms / modal ===== */
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:6px; }
+  .field input, .field select, .field textarea{
+    width:100%; border:1px solid var(--border); border-radius:var(--radius-s);
+    padding:9px 11px; font-size:13.5px; font-family:inherit; color:var(--ink);
+    background:var(--surface); outline:none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{ border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-soft); }
+  .field input[readonly]{ background:var(--surface-alt); color:var(--ink-soft); cursor:not-allowed; }
+  .combo{ position:relative; }
+  .combo-list{ display:none; position:absolute; top:100%; right:0; left:0; z-index:300; margin-top:3px; max-height:230px; overflow-y:auto;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-s); box-shadow:0 10px 26px rgba(10,30,28,.16); }
+  .combo.open .combo-list{ display:block; }
+  .combo-item{ padding:8px 11px; font-size:13px; cursor:pointer; display:flex; gap:8px; }
+  .combo-item .cc{ font-family:'IBM Plex Mono'; color:var(--ink-faint); direction:ltr; unicode-bidi:isolate; }
+  .combo-item.active, .combo-item:hover{ background:var(--primary-soft); }
+  .combo-empty{ padding:9px 11px; font-size:12.5px; color:var(--ink-faint); }
+  .combo.invalid input.combo-input{ border-color:var(--danger); }
+  #importEntriesStatus{ white-space:pre-line; line-height:1.8; }
+  tr.je-row td{ border-bottom:1px solid var(--border-soft); }
+  .btn-edit-text{ background:none; border:none; color:var(--primary); cursor:pointer; font:inherit; font-size:12px; padding:3px 6px; }
+  .btn-edit-text:hover{ text-decoration:underline; }
+  .field-hint{ font-size:11.5px; color:var(--ink-faint); margin-top:5px; }
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  .overlay{
+    position:fixed; inset:0; background:rgba(20,32,31,0.42);
+    display:none; align-items:flex-start; justify-content:center;
+    padding:5vh 16px; z-index:100; overflow-y:auto;
+  }
+  .overlay.open{ display:flex; }
+  .modal{
+    background:var(--surface); border-radius:var(--radius-l); width:100%; max-width:560px;
+    box-shadow:0 20px 50px rgba(10,30,28,0.25); animation:pop .16s ease;
+  }
+  .modal.wide{ max-width:720px; }
+  @keyframes pop{ from{ opacity:0; transform:translateY(-8px) scale(.98);} to{opacity:1; transform:none;} }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--border-soft); }
+  .modal-head h3{ margin:0; font-size:15.5px; font-weight:700; }
+  .modal-close{ cursor:pointer; color:var(--ink-faint); background:none; border:none; font-size:18px; line-height:1; }
+  .modal-body{ padding:20px 22px; }
+  .modal-foot{ padding:16px 22px; border-top:1px solid var(--border-soft); display:flex; justify-content:flex-end; gap:10px; }
+
+  .lines-table{ width:100%; border-collapse:collapse; margin-top:4px; }
+  .lines-table th{ font-size:11px; color:var(--ink-faint); text-align:right; padding:6px 8px; font-weight:600; }
+  .lines-table td{ padding:5px 6px; vertical-align:middle; }
+  .lines-table input, .lines-table select{ padding:7px 8px; font-size:12.5px; }
+  .rm-line{ background:none; border:none; color:var(--ink-faint); cursor:pointer; font-size:16px; padding:2px 6px; }
+  .rm-line:hover{ color:var(--danger); }
+  .totals-strip{
+    display:flex; gap:18px; margin-top:12px; padding:12px 14px; background:var(--surface-alt);
+    border-radius:var(--radius-s); font-size:12.5px; flex-wrap:wrap;
+  }
+  .totals-strip b{ font-family:'IBM Plex Mono'; direction:ltr; unicode-bidi:isolate; }
+  .diff-ok{ color:var(--primary); font-weight:700; }
+  .diff-bad{ color:var(--danger); font-weight:700; }
+
+  .empty-state{ text-align:center; padding:40px 20px; color:var(--ink-faint); font-size:13px; }
+
+  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start; }
+  @media (max-width:820px){ .two-col{ grid-template-columns:1fr; } }
+
+  .select-inline{
+    border:1px solid var(--border); border-radius:var(--radius-s); padding:9px 12px;
+    font-size:13.5px; font-family:inherit; background:var(--surface); min-width:260px;
+  }
+  .combo-inline{ position:relative; min-width:260px; }
+  .combo-inline .combo-input{
+    width:100%; border:1px solid var(--border); border-radius:var(--radius-s); padding:9px 12px;
+    font-size:13.5px; font-family:inherit; background:var(--surface); color:var(--ink); outline:none;
+  }
+  .combo-inline .combo-input:focus{ border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-soft); }
+  .company-logo-chip{ width:30px; height:30px; object-fit:contain; border-radius:6px; }
+
+  .section-title{ font-size:12.5px; font-weight:700; color:var(--ink-soft); margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  .section-title .dot{ width:7px; height:7px; border-radius:50%; }
+
+  .muted{ color:var(--ink-faint); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">د</div>
+      <div class="brand-text">
+        <div class="name" id="brandNameText">دفترة</div>
+        <div class="tag">نظام محاسبي متكامل</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="company-chip">
+        <img id="companyLogoChip" class="company-logo-chip" style="display:none" alt="شعار الشركة">
+        <div>
+          <span class="c1" id="companyNameChip">شركة النموذج التجارية</span>
+          <span class="c2">السنة المالية 2026</span>
+        </div>
+      </div>
+      <div class="date-chip" id="todayChip">—</div>
+    </div>
+  </div>
+
+  <div class="navbar">
+    <div class="nav-item" data-page="journal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6M9 18h3"/></svg>
+      <span class="side-label">قيود اليومية</span>
+    </div>
+    <div class="nav-item" data-page="ledger">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H12v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H12v16h6.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>
+      <span class="side-label">دفتر الأستاذ</span>
+    </div>
+    <div class="nav-item" data-page="trial">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M4 8h16M6 8l-3 6a3 3 0 0 0 6 0zM18 8l-3 6a3 3 0 0 0 6 0z"/><path d="M9 21h6"/></svg>
+      <span class="side-label">ميزان المراجعة</span>
+    </div>
+    <div class="nav-item" data-page="income">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M6 16l4-5 3 3 5-7"/></svg>
+      <span class="side-label">قائمة الدخل</span>
+    </div>
+    <div class="nav-item" data-page="balance">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="7.2" height="15" rx="1.2"/><rect x="13.3" y="4.5" width="7.2" height="15" rx="1.2"/></svg>
+      <span class="side-label">الميزانية العمومية</span>
+    </div>
+    <div class="nav-item active" data-page="accounts">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><path d="M6 8.4V18M6 12h9a2 2 0 0 0 2-2V8.4"/></svg>
+      <span class="side-label">شجرة الحسابات</span>
+    </div>
+
+    <div class="nav-item nav-settings" data-page="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="side-label">الإعدادات</span>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- ===================== PAGE: CHART OF ACCOUNTS ===================== -->
+    <section class="page active" id="page-accounts">
+      <div class="page-head">
+        <div>
+          <h1>شجرة الحسابات</h1>
+          <p>كل حسابات الشركة مرتبة حسب النوع — الحسابات الفرعية فقط تُستخدم في القيود</p>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="openImportAccountsModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+            استيراد حسابات
+          </button>
+          <button class="btn btn-ghost" onclick="exportAccountsExcel()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg>
+            حفظ Excel
+          </button>
+          <button class="btn btn-ghost" onclick="exportAccountsJson()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg>
+            حفظ بصيغة البرنامج
+          </button>
+          <button class="btn btn-primary" onclick="openAccountModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            حساب جديد
+          </button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>الكود</th><th>اسم الحساب</th><th>النوع</th><th>القابلية</th><th></th>
+            </tr></thead>
+            <tbody id="accountsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="page-head" style="margin-top:26px;">
+        <div>
+          <h1 style="font-size:17px;">الفرعي</h1>
+          <p>القائمة التي تظهر كخيار "الفرعي" عند إضافة قيد يومية</p>
+        </div>
+        <button class="btn btn-primary" onclick="openSubAccountModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          فرعي جديد
+        </button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>الكود</th><th>اسم الفرعي</th><th></th>
+            </tr></thead>
+            <tbody id="subAccountsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="page-head" style="margin-top:26px;">
+        <div>
+          <h1 style="font-size:17px;">مراكز التكلفة</h1>
+          <p>القائمة التي تظهر كخيار "مركز التكلفة" عند إضافة قيد يومية</p>
+        </div>
+        <button class="btn btn-primary" onclick="openCostCenterModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          مركز تكلفة جديد
+        </button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>الكود</th><th>اسم مركز التكلفة</th><th></th>
+            </tr></thead>
+            <tbody id="costCentersTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PAGE: JOURNAL ===================== -->
+    <section class="page" id="page-journal">
+      <div class="page-head">
+        <div>
+          <h1>قيود اليومية</h1>
+          <p>كل قيد له حساب مدين وحساب دائن — املأ البيانات واضغط ترحيل ليظهر في الجدول</p>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn btn-ghost" onclick="openImportEntriesModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg> استيراد قيود</button><button class="btn btn-ghost" onclick="exportEntriesExcel()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> حفظ Excel</button><button class="btn btn-ghost" onclick="exportEntriesJson()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> حفظ بصيغة البرنامج</button><button class="btn btn-ghost" style="color:#dc2626; border-color:#dc2626;" onclick="deleteAllEntries()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg> حذف كل القيود</button><button class="btn btn-primary" onclick="openEntryModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          إضافة قيد
+        </button></div>
+      </div>
+      <div class="card" style="padding:14px 16px; margin-bottom:14px;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <input type="text" id="journalSearchInput" class="select-inline" style="flex:1; min-width:220px;" placeholder="ابحث بالبيان أو مركز التكلفة..." oninput="renderJournal()">
+          <div class="combo combo-inline" id="journalAccountCombo">
+            <input type="text" class="combo-input" id="journalAccountInput" autocomplete="off" placeholder="اكتب أول حرف من اسم أو كود الحساب...">
+            <input type="hidden" id="journalAccountFilter">
+            <div class="combo-list"></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="muted" style="font-size:12px; white-space:nowrap;">من تاريخ</span>
+            <input type="date" id="journalDateFrom" class="select-inline" style="min-width:150px;" oninput="renderJournal()">
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="muted" style="font-size:12px; white-space:nowrap;">إلى تاريخ</span>
+            <input type="date" id="journalDateTo" class="select-inline" style="min-width:150px;" oninput="renderJournal()">
+          </div>
+          <button class="btn btn-ghost" onclick="clearJournalFilters()">مسح الفلاتر</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>التاريخ</th><th>البيان</th><th>من حساب</th><th>الى حساب</th><th>الفرعي</th><th>مركز التكلفة</th><th class="num">مدين</th><th class="num">دائن</th><th></th>
+            </tr></thead>
+            <tbody id="journalTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PAGE: LEDGER ===================== -->
+    <section class="page" id="page-ledger">
+      <div class="page-head">
+        <div>
+          <h1>دفتر الأستاذ</h1>
+          <p>اختر حسابًا لعرض كل حركاته والرصيد المتحرك</p>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <div class="combo combo-inline" id="ledgerAccountCombo">
+            <input type="text" class="combo-input" id="ledgerAccountInput" autocomplete="off" placeholder="اكتب أول حرف من اسم الحساب...">
+            <input type="hidden" id="ledgerAccountSelect">
+            <div class="combo-list"></div>
+          </div>
+          <button class="btn btn-ghost" onclick="exportLedgerExcel()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> حفظ Excel</button>
+          <button class="btn btn-primary" onclick="exportLedgerPdf()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> حفظ PDF</button>
+        </div>
+      </div>
+      <div class="kpi-row" id="ledgerKpis"></div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>التاريخ</th><th>البيان</th><th class="num">مدين</th><th class="num">دائن</th>
+            </tr></thead>
+            <tbody id="ledgerTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PAGE: TRIAL BALANCE ===================== -->
+    <section class="page" id="page-trial">
+      <div class="page-head">
+        <div>
+          <h1>ميزان المراجعة</h1>
+          <p>إجمالي الحركة المدينة والدائنة ورصيد كل حساب حتى الآن</p>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="exportTrialPdf()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> طباعة PDF</button>
+        </div>
+      </div>
+      <div class="card" style="padding:14px 16px; margin-bottom:14px;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <input type="text" id="trialSearchInput" class="select-inline" style="flex:1; min-width:220px;" placeholder="ابحث عن حساب بالاسم أو الكود..." oninput="renderTrialBalance()">
+          <button class="btn btn-ghost" onclick="clearTrialFilters()">مسح الفلتر</button>
+        </div>
+      </div>
+      <div class="kpi-row" id="trialKpis"></div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>الكود</th><th>اسم الحساب</th><th>النوع</th><th class="num">مدين</th><th class="num">دائن</th><th class="num">الرصيد</th>
+            </tr></thead>
+            <tbody id="trialTbody"></tbody>
+            <tfoot><tr>
+              <td colspan="3">الإجمالي</td>
+              <td class="num" id="trialTotalDebit">0.00</td>
+              <td class="num" id="trialTotalCredit">0.00</td>
+              <td class="num" id="trialTotalBalance">0.00</td>
+            </tr></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="status-banner" id="trialStatus"></div>
+    </section>
+
+    <!-- ===================== PAGE: INCOME STATEMENT ===================== -->
+    <section class="page" id="page-income">
+      <div class="page-head">
+        <div>
+          <h1>قائمة الدخل</h1>
+          <p>الإيرادات والمصروفات وصافي نتيجة النشاط عن الفترة</p>
+        </div>
+        <button class="btn btn-primary" onclick="exportIncomePdf()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> طباعة PDF</button>
+      </div>
+
+      <div class="two-col">
+        <div class="card card-pad">
+          <div class="section-title"><span class="dot" style="background:var(--primary)"></span>الإيرادات</div>
+          <div class="table-wrap">
+            <table>
+              <tbody id="revTbody"></tbody>
+              <tfoot><tr><td>إجمالي الإيرادات</td><td class="num" id="revTotal">0.00</td></tr></tfoot>
+            </table>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <div class="section-title"><span class="dot" style="background:var(--danger)"></span>المصروفات</div>
+          <div class="table-wrap">
+            <table>
+              <tbody id="expTbody"></tbody>
+              <tfoot><tr><td>إجمالي المصروفات</td><td class="num" id="expTotal">0.00</td></tr></tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-row" style="grid-template-columns:1fr; margin-top:18px;">
+        <div class="kpi kpi-ok" id="netIncomeBox" style="display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <div class="label" id="netIncomeLabel">صافي الربح عن الفترة</div>
+            <div class="value num" id="netIncomeValue">0.00</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PAGE: BALANCE SHEET ===================== -->
+    <section class="page" id="page-balance">
+      <div class="page-head">
+        <div>
+          <h1>الميزانية العمومية</h1>
+          <p>المركز المالي للشركة في لحظة معينة — الأصول مقابل الخصوم وحقوق الملكية</p>
+        </div>
+        <button class="btn btn-primary" onclick="exportBalancePdf()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> طباعة PDF</button>
+      </div>
+
+      <div class="two-col">
+        <div class="card card-pad">
+          <div class="section-title"><span class="dot" style="background:var(--debit)"></span>الأصول</div>
+          <div class="table-wrap">
+            <table>
+              <tbody id="assetsTbody"></tbody>
+              <tfoot><tr><td>إجمالي الأصول</td><td class="num" id="assetsTotal">0.00</td></tr></tfoot>
+            </table>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <div class="section-title"><span class="dot" style="background:var(--credit)"></span>الخصوم</div>
+          <div class="table-wrap">
+            <table>
+              <tbody id="liabTbody"></tbody>
+              <tfoot><tr><td>إجمالي الخصوم</td><td class="num" id="liabTotal">0.00</td></tr></tfoot>
+            </table>
+          </div>
+          <div class="section-title" style="margin-top:18px;"><span class="dot" style="background:var(--gold)"></span>حقوق الملكية</div>
+          <div class="table-wrap">
+            <table>
+              <tbody id="eqTbody"></tbody>
+              <tfoot><tr><td>إجمالي حقوق الملكية</td><td class="num" id="eqTotal">0.00</td></tr></tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="status-banner" id="balanceStatus"></div>
+    </section>
+
+    <!-- ===================== PAGE: SETTINGS ===================== -->
+    <section class="page" id="page-settings">
+      <div class="page-head">
+        <div>
+          <h1>الإعدادات</h1>
+          <p>بيانات الشركة اللي بتظهر في التقارير المطبوعة، ونسخ احتياطية لكل بيانات النظام</p>
+        </div>
+      </div>
+
+      <div class="card" style="padding:20px; max-width:640px;">
+        <div class="section-title"><span class="dot" style="background:var(--primary)"></span>بيانات الشركة</div>
+        <div class="field">
+          <label>اسم الشركة</label>
+          <input type="text" id="setCompanyName" placeholder="اسم الشركة">
+        </div>
+        <div class="field">
+          <label>شعار الشركة (اللوجو)</label>
+          <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+            <img id="setLogoPreview" style="width:64px;height:64px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:var(--surface-alt);display:none;" alt="معاينة الشعار">
+            <input type="file" id="setLogoInput" accept="image/*" onchange="handleLogoUpload(event)">
+            <button class="btn btn-ghost" type="button" id="removeLogoBtn" style="display:none;" onclick="removeLogo()">إزالة الشعار</button>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveCompanyInfo()">حفظ بيانات الشركة</button>
+      </div>
+
+      <div class="card" style="padding:20px; max-width:640px; margin-top:18px;">
+        <div class="section-title"><span class="dot" style="background:var(--gold)"></span>النسخ الاحتياطي</div>
+        <p style="font-size:12.5px; color:var(--ink-faint); margin:0 0 14px;">احفظي نسخة من كل بيانات النظام — شجرة الحسابات، القيود، الفروع، مراكز التكلفة، وبيانات الشركة — في ملف واحد تقدري ترجعي بيه أي وقت.</p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="backupAllData()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg>
+            حفظ نسخة احتياطية كاملة
+          </button>
+          <button class="btn btn-ghost" onclick="document.getElementById('restoreFileInput').click()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+            استعادة نسخة احتياطية
+          </button>
+          <input type="file" id="restoreFileInput" accept="application/json" style="display:none" onchange="handleRestoreFile(event)">
+        </div>
+      </div>
+
+      <div class="card" style="padding:20px; max-width:640px; margin-top:18px; border:1px solid #dc2626;">
+        <div class="section-title" style="color:#dc2626;"><span class="dot" style="background:#dc2626"></span>منطقة خطر</div>
+        <p style="font-size:12.5px; color:var(--ink-faint); margin:0 0 14px;">مسح كل بيانات النظام نهائيًا — الحسابات، القيود، الفروع، مراكز التكلفة. الإجراء لا يمكن التراجع عنه، يفضّل عمل نسخة احتياطية أولاً.</p>
+        <button class="btn" style="background:#dc2626; color:#fff;" onclick="wipeAllData()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+          مسح كل بيانات النظام
+        </button>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ===================== MODAL: ADD ACCOUNT ===================== -->
+<div class="overlay" id="accountOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>إضافة حساب جديد</h3><button class="modal-close" onclick="closeModal('accountOverlay')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field"><label>نوع الحساب</label>
+          <select id="accType" onchange="onAccountTypeOrLevelChange()">
+            <option value="asset">أصول</option>
+            <option value="liability">خصوم</option>
+            <option value="equity">حقوق ملكية</option>
+            <option value="revenue">إيرادات</option>
+            <option value="expense">مصروفات</option>
+          </select>
+        </div>
+        <div class="field"><label>مستوى الحساب</label>
+          <select id="accLevel" onchange="onAccountTypeOrLevelChange()">
+            <option value="main">رئيسي — لا يظهر في القيود</option>
+            <option value="sub" selected>فرعي — يُستخدم بالقيود</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" id="accParentField">
+        <label>يتبع الحساب الرئيسي</label>
+        <select id="accParent" onchange="refreshAccountCodePreview()"></select>
+      </div>
+      <div class="field"><label>اسم الحساب</label><input id="accName" placeholder="مثال: حساب بنك النقدية"></div>
+      <div class="field">
+        <label>كود الحساب</label>
+        <input id="accCode" class="num" readonly>
+        <div class="field-hint">الكود بيتكتب تلقائيًا حسب نوع الحساب ومستواه</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('accountOverlay')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveAccount()">حفظ الحساب</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: IMPORT ACCOUNTS ===================== -->
+<div class="overlay" id="importAccountsOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>استيراد حسابات</h3><button class="modal-close" onclick="closeModal('importAccountsOverlay')">✕</button></div>
+    <div class="modal-body">
+      <div class="field">
+        <label>اختر ملف (Excel أو CSV أو ملف بصيغة البرنامج JSON)</label>
+        <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv,.json">
+      </div>
+      <div class="field-hint" style="margin-bottom:12px; line-height:1.7;">
+        أعمدة شيت الإكسل المطلوبة بالترتيب: <b>الكود</b> (اختياري — لو سبته فاضي هيتكتب تلقائيًا)، <b>اسم الحساب</b>، <b>النوع</b> (أصول / خصوم / حقوق ملكية / إيرادات / مصروفات)، <b>المستوى</b> (رئيسي / فرعي)، <b>يتبع الحساب الرئيسي</b> — مطلوبة فقط لو المستوى فرعي، واكتب فيها اسم الحساب الرئيسي بالظبط (مش كوده)، سواء كان موجود بالفعل أو حساب رئيسي تاني في نفس الشيت.
+        <br>الحسابات الرئيسية بيتم استيرادها الأول، وبعدين الفرعية بتتربط بيها تلقائيًا بمطابقة الاسم.
+      </div>
+      <div id="importStatus" class="num"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('importAccountsOverlay')">إغلاق</button>
+      <button class="btn btn-primary" onclick="handleAccountsFileImport()">استيراد</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: ADD SUB-ACCOUNT (فرعي) ===================== -->
+<div class="overlay" id="subAccountOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>إضافة فرعي</h3><button class="modal-close" onclick="closeModal('subAccountOverlay')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>كود الفرعي</label><input id="subCode" placeholder="مثال: SUB-04"></div>
+      <div class="field"><label>اسم الفرعي</label><input id="subName" placeholder="مثال: فرع طنطا"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('subAccountOverlay')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveSubAccount()">حفظ الفرعي</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: ADD COST CENTER ===================== -->
+<div class="overlay" id="costCenterOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>إضافة مركز تكلفة</h3><button class="modal-close" onclick="closeModal('costCenterOverlay')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>كود المركز</label><input id="ccCode" placeholder="مثال: CC-05"></div>
+      <div class="field"><label>اسم مركز التكلفة</label><input id="ccName" placeholder="مثال: فرع الإسكندرية"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('costCenterOverlay')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveCostCenter()">حفظ المركز</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: ADD JOURNAL ENTRY ===================== -->
+<div class="overlay" id="entryOverlay">
+  <div class="modal wide">
+    <div class="modal-head"><h3 id="entryTitle">إضافة قيد</h3><button class="modal-close" onclick="closeModal('entryOverlay')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field"><label>التاريخ</label><input type="date" id="entDate"></div>
+        <div class="field"><label>البيان</label><input id="entDesc" placeholder="وصف مختصر للعملية"></div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>من حساب <span class="muted" style="font-weight:400;">(الجانب المدين)</span></label>
+          <div class="combo" data-combo="entFrom"><input type="text" class="combo-input" autocomplete="off" placeholder="اكتب أول حرف من اسم الحساب..."><input type="hidden" id="entFrom"><div class="combo-list"></div></div>
+        </div>
+        <div class="field"><label>مدين</label><input type="number" id="entDebit" min="0" step="0.01" placeholder="0.00" oninput="updateEntryStatus()"></div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>الى حساب <span class="muted" style="font-weight:400;">(الجانب الدائن)</span></label>
+          <div class="combo" data-combo="entTo"><input type="text" class="combo-input" autocomplete="off" placeholder="اكتب أول حرف من اسم الحساب..."><input type="hidden" id="entTo"><div class="combo-list"></div></div>
+        </div>
+        <div class="field"><label>دائن</label><input type="number" id="entCredit" min="0" step="0.01" placeholder="0.00" oninput="updateEntryStatus()"></div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>الفرعي <span class="muted" style="font-weight:400;">(اختياري)</span></label>
+          <div class="combo" data-combo="entSubAccount"><input type="text" class="combo-input" autocomplete="off" placeholder="اكتب للبحث أو اختر..."><input type="hidden" id="entSubAccount"><div class="combo-list"></div></div>
+        </div>
+        <div class="field">
+          <label>مركز التكلفة</label>
+          <div class="combo" data-combo="entCostCenter"><input type="text" class="combo-input" autocomplete="off" placeholder="اكتب للبحث أو اختر..."><input type="hidden" id="entCostCenter"><div class="combo-list"></div></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>صورة مرفقة (اختياري)</label>
+        <input type="file" id="entImageInput" accept="image/*" onchange="onEntImagePicked(this)">
+        <div id="entImagePreview" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="totals-strip">
+        <span id="entDiffWrap">الحالة: <b class="num" id="entDiff">أكمل بيانات القيد</b></span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('entryOverlay')">إلغاء</button>
+      <button class="btn btn-primary" id="saveEntryBtn" onclick="saveEntry()">ترحيل</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===================== MODAL: IMPORT ENTRIES ===================== -->
+<div class="overlay" id="importEntriesOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>استيراد قيود</h3><button class="modal-close" onclick="closeModal('importEntriesOverlay')">✕</button></div>
+    <div class="modal-body">
+      <div class="field">
+        <label>اختر ملف (Excel أو CSV أو ملف بصيغة البرنامج JSON)</label>
+        <input type="file" id="importEntriesFile" accept=".xlsx,.xls,.csv,.json">
+      </div>
+      <div class="field-hint" style="margin-bottom:12px; line-height:1.7;">
+        أعمدة الإكسل (القيد في صفين: المدين في صف والدائن في الصف اللي بعده، أو كله في صف واحد): <b>التاريخ</b>، <b>البيان</b>، <b>من حساب</b>، <b>مدين</b>، <b>الى حساب</b>، <b>دائن</b>، <b>الفرعي</b>، <b>مركز التكلفة</b>.
+        <br>الحسابات والفرعي ومركز التكلفة تتكتب بالكود أو بالاسم بالظبط (أو "الكود — الاسم"). لازم يكونوا موجودين في السيستم قبل الاستيراد، والحسابات لازم تكون فرعية.
+        <br>مدين ودائن لازم يتساووا (أو اكتب عمود <b>المبلغ</b> بس). القيود بتتضاف فوق الموجود من غير ما يتمسح حاجة.
+      </div>
+      <div id="importEntriesStatus" class="num"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('importEntriesOverlay')">إغلاق</button>
+      <button class="btn btn-primary" onclick="handleEntriesFileImport()">استيراد</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="imageViewOverlay">
+  <div class="modal wide">
+    <div class="modal-head"><h3>الصورة المرفقة بالقيد</h3><button class="modal-close" onclick="closeModal('imageViewOverlay')">✕</button></div>
+    <div class="modal-body" style="text-align:center;"><img id="imageViewImg" style="max-width:100%; border-radius:8px; border:1px solid var(--border);"></div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script>
+/* ============================================================
+   FIREBASE INIT — الاتصال بقاعدة بيانات Firestore
+   كل قيد بيتخزن كمستند مستقل جوه subcollection اسمها entries،
+   بدل ما كل البيانات تتحط في مستند واحد — عشان السيستم يستحمل
+   عدد قيود كبير جدًا من غير ما نوصل لحد أقصى في المساحة
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyBDmfOTD4uQK6a1MS_NJgqaCzdLbP1LJfw",
+  authDomain: "eldeep-daftra.firebaseapp.com",
+  projectId: "eldeep-daftra",
+  storageBucket: "eldeep-daftra.firebasestorage.app",
+  messagingSenderId: "363083418310",
+  appId: "1:363083418310:web:12a400ff45459c69f165c7"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const FIRESTORE_META = db.collection('daftara_system').doc('main');
+const FIRESTORE_ENTRIES = FIRESTORE_META.collection('entries');
+let _applyingRemoteUpdate = false; // عشان نمنع لوب لا نهائي لما نستقبل تحديث من فايرستور
+let _saveDebounceTimer = null;
+let _entriesFirstLoadDone = false;
+
+function pushEntryRemote(entry){
+  FIRESTORE_ENTRIES.doc(String(entry.id)).set(entry).catch(e=>{
+    console.warn('تعذر حفظ القيد أونلاين', e);
+    showToast('تعذر حفظ القيد أونلاين — تأكدي من الاتصال بالإنترنت', true);
+  });
+}
+function removeEntryRemote(id){
+  FIRESTORE_ENTRIES.doc(String(id)).delete().catch(e=>console.warn('تعذر حذف القيد أونلاين', e));
+}
+async function pushEntriesBatchRemote(list){
+  for(let i=0;i<list.length;i+=450){
+    const chunk = list.slice(i,i+450);
+    const batch = db.batch();
+    chunk.forEach(e=> batch.set(FIRESTORE_ENTRIES.doc(String(e.id)), e));
+    try{ await batch.commit(); }catch(e){ console.warn('تعذر رفع دفعة القيود أونلاين', e); showToast('تعذر رفع بعض القيود أونلاين', true); }
+  }
+}
+async function clearAllEntriesRemote(){
+  try{
+    const snap = await FIRESTORE_ENTRIES.get();
+    const docs = snap.docs;
+    for(let i=0;i<docs.length;i+=450){
+      const batch = db.batch();
+      docs.slice(i,i+450).forEach(d=>batch.delete(d.ref));
+      await batch.commit();
+    }
+  }catch(e){ console.warn('تعذر حذف القيود أونلاين', e); }
+}
+</script>
+<script>
+/* ============================================================
+   DATA MODEL (in-memory only — resets on reload)
+   ============================================================ */
+// كل حساب إما "رئيسي" (تجميعي، لا يظهر في القيود) أو "فرعي" (يتبع حساب رئيسي، وهو فقط الذي يُستخدم في القيود وميزان المراجعة)
+// الشجرة تبدأ فاضية — أضف حسابات يدويًا من زر "حساب جديد"، أو استوردها من ملف إكسل / ملف بصيغة البرنامج (JSON)
+let accounts = [];
+
+let entries = [];
+let entrySeq = 1;
+
+let subAccounts = [
+  {code:'SUB-01', name:'الفرع الرئيسي'},
+  {code:'SUB-02', name:'فرع الإسكندرية'},
+  {code:'SUB-03', name:'فرع الجيزة'},
+];
+
+let costCenters = [
+  {code:'CC-01', name:'الإدارة العامة'},
+  {code:'CC-02', name:'فرع المبيعات الرئيسي'},
+  {code:'CC-03', name:'قسم المشتريات'},
+  {code:'CC-04', name:'الإنتاج'},
+];
+
+// بيانات الشركة (الاسم والشعار) اللي بتظهر في كل التقارير المطبوعة
+let companyInfo = {name:'شركة النموذج التجارية', logo:null};
+
+// Each entry = one "من حساب" (debited) + one "الى حساب" (credited) + amount + فرعي + مركز تكلفة.
+// Internally we still keep a `lines` array so ledger/trial-balance/statements
+// (which sum debit/credit per account) work unchanged.
+function seedEntries(){
+  addSeedEntry('2026-01-01','إيداع رأس المال النقدي', '1102', '3101', 200000, 'SUB-01', 'CC-01');
+  addSeedEntry('2026-01-05','شراء أثاث نقدًا', '1301', '1101', 30000, 'SUB-01', 'CC-01');
+  addSeedEntry('2026-01-10','بيع بضاعة نقدًا للعملاء', '1101', '4101', 45000, 'SUB-02', 'CC-02');
+  addSeedEntry('2026-01-12','سداد إيجار المحل عن الشهر', '5102', '1102', 8000, 'SUB-01', 'CC-01');
+  addSeedEntry('2026-01-15','شراء بضاعة آجل من مورد', '1202', '2101', 25000, 'SUB-03', 'CC-03');
+  addSeedEntry('2026-01-20','صرف مرتبات الموظفين', '5101', '1102', 12000, 'SUB-01', 'CC-01');
+}
+function addSeedEntry(date, desc, fromCode, toCode, amount, subAccountCode, costCenterCode){
+  entries.push({
+    id:entrySeq, no:'JE-'+String(entrySeq).padStart(4,'0'),
+    date, desc, fromCode, toCode, amount, subAccountCode, costCenterCode,
+    lines:[{code:fromCode, debit:amount, credit:0}, {code:toCode, debit:0, credit:amount}]
+  });
+  entrySeq++;
+}
+
+const TYPE_LABEL = {asset:'أصول', liability:'خصوم', equity:'حقوق ملكية', revenue:'إيرادات', expense:'مصروفات'};
+const TYPE_PILL = {asset:'pill-asset', liability:'pill-liability', equity:'pill-equity', revenue:'pill-revenue', expense:'pill-expense'};
+
+function fmt(n){
+  n = Math.round((n + Number.EPSILON) * 100) / 100;
+  if (n === 0) n = 0; // avoid -0
+  return n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('page-'+item.dataset.page).classList.add('active');
+    renderAll();
+  });
+});
+
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+/* ============================================================
+   CHART OF ACCOUNTS
+   ============================================================ */
+// أعلى كود مستخدم فعليًا داخل نوع حساب معيّن (بين الحسابات الرئيسية لهذا النوع)
+function mainAccountsOfType(type){
+  return accounts.filter(a=>a.level==='main' && a.type===type).sort((a,b)=>a.code.localeCompare(b.code));
+}
+function nextMainCode(type){
+  const base = {asset:1000, liability:2000, equity:3000, revenue:4000, expense:5000}[type];
+  const mains = mainAccountsOfType(type).map(a=>parseInt(a.code,10));
+  const maxCode = mains.length ? Math.max(...mains) : base;
+  return String(maxCode + 100);
+}
+function nextSubCode(parentCode){
+  const subs = accounts.filter(a=>a.level==='sub' && a.parentCode===parentCode).map(a=>parseInt(a.code,10));
+  const base = parseInt(parentCode, 10);
+  const maxCode = subs.length ? Math.max(...subs) : base;
+  return String(maxCode + 1);
+}
+function onAccountTypeOrLevelChange(){
+  const level = document.getElementById('accLevel').value;
+  document.getElementById('accParentField').style.display = (level==='sub') ? '' : 'none';
+  if(level==='sub') populateAccountParentOptions();
+  refreshAccountCodePreview();
+}
+function populateAccountParentOptions(){
+  const type = document.getElementById('accType').value;
+  const parentSelect = document.getElementById('accParent');
+  const mains = mainAccountsOfType(type);
+  parentSelect.innerHTML = mains.length
+    ? mains.map(m=>`<option value="${m.code}">${m.code} — ${m.name}</option>`).join('')
+    : '<option value="">لا يوجد حساب رئيسي لهذا النوع بعد — أضف رئيسي أولاً</option>';
+}
+function refreshAccountCodePreview(){
+  const type = document.getElementById('accType').value;
+  const level = document.getElementById('accLevel').value;
+  const codeInput = document.getElementById('accCode');
+  if(level==='sub'){
+    const parentCode = document.getElementById('accParent').value;
+    codeInput.value = parentCode ? nextSubCode(parentCode) : '—';
+  } else {
+    codeInput.value = nextMainCode(type);
+  }
+}
+function openAccountModal(){
+  document.getElementById('accName').value = '';
+  document.getElementById('accType').value = 'asset';
+  document.getElementById('accLevel').value = 'sub';
+  onAccountTypeOrLevelChange();
+  document.getElementById('accountOverlay').classList.add('open');
+}
+function saveAccount(){
+  const type = document.getElementById('accType').value;
+  const level = document.getElementById('accLevel').value;
+  const name = document.getElementById('accName').value.trim();
+  if(!name){ alert('من فضلك أدخل اسم الحساب'); return; }
+
+  let parentCode = null;
+  if(level==='sub'){
+    parentCode = document.getElementById('accParent').value;
+    if(!parentCode){ alert('من فضلك اختر الحساب الرئيسي اللي هيتبعه هذا الحساب الفرعي — لو مفيش حساب رئيسي لهذا النوع، ضيف رئيسي الأول'); return; }
+  }
+
+  const code = level==='sub' ? nextSubCode(parentCode) : nextMainCode(type);
+  accounts.push({code, name, type, level, parentCode, postable: level==='sub'});
+  accounts.sort((a,b)=> a.code.localeCompare(b.code));
+  closeModal('accountOverlay');
+  renderAll();
+}
+function deleteAccount(code){
+  const acc = accounts.find(a=>a.code===code);
+  if(!acc) return;
+  if(acc.level==='main' && accounts.some(a=>a.parentCode===code)){
+    alert('لا يمكن حذف حساب رئيسي له حسابات فرعية تابعة له — احذف الحسابات الفرعية أولاً');
+    return;
+  }
+  const used = entries.some(e=> e.lines.some(l=> l.code===code));
+  if(used){ alert('لا يمكن حذف هذا الحساب لأنه مستخدم في قيود يومية موجودة'); return; }
+  if(!confirm('هل تريد حذف هذا الحساب؟')) return;
+  accounts = accounts.filter(a=>a.code!==code);
+  renderAll();
+}
+function editAccount(code){
+  const acc = accounts.find(a=>a.code===code); if(!acc) return;
+  const name = prompt('تعديل اسم الحساب ('+acc.code+'):', acc.name);
+  if(name===null) return;
+  const t = name.trim(); if(!t){ alert('اسم الحساب لا يمكن أن يكون فاضي'); return; }
+  acc.name = t; renderAll();
+}
+function renderAccountsTree(){
+  const tbody = document.getElementById('accountsTbody');
+  tbody.innerHTML = '';
+  const mains = accounts.filter(a=>a.level==='main').sort((a,b)=>a.code.localeCompare(b.code));
+  if(mains.length===0){
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">لا توجد حسابات بعد</div></td></tr>`;
+    return;
+  }
+  mains.forEach(m=>{
+    const trMain = document.createElement('tr');
+    trMain.innerHTML = `
+      <td><span class="tree-code">${m.code}</span></td>
+      <td><div class="tree-row"><b class="acc-name">${m.name}</b></div></td>
+      <td><span class="pill ${TYPE_PILL[m.type]}">${TYPE_LABEL[m.type]}</span></td>
+      <td><span class="pill pill-group">رئيسي</span></td>
+      <td style="white-space:nowrap"><button class="btn-edit-text" onclick="editAccount('${m.code}')">تعديل</button> <button class="btn-danger-text" onclick="deleteAccount('${m.code}')">حذف</button></td>
+    `;
+    tbody.appendChild(trMain);
+    accounts.filter(a=>a.level==='sub' && a.parentCode===m.code).sort((a,b)=>a.code.localeCompare(b.code)).forEach(a=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="tree-code">${a.code}</span></td>
+        <td><div class="tree-row acc-name" style="padding-inline-start:18px">${a.name}</div></td>
+        <td><span class="pill ${TYPE_PILL[a.type]}">${TYPE_LABEL[a.type]}</span></td>
+        <td><span class="pill pill-revenue" style="background:var(--surface-alt);color:var(--ink-soft)">فرعي</span></td>
+        <td style="white-space:nowrap"><button class="btn-edit-text" onclick="editAccount('${a.code}')">تعديل</button> <button class="btn-danger-text" onclick="deleteAccount('${a.code}')">حذف</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+/* ============================================================
+   IMPORT / EXPORT ACCOUNTS
+   ============================================================ */
+const TYPE_ALIASES = {
+  'أصول':'asset','اصول':'asset','asset':'asset','assets':'asset',
+  'خصوم':'liability','liability':'liability','liabilities':'liability',
+  'حقوق ملكية':'equity','حقوق الملكية':'equity','equity':'equity',
+  'إيرادات':'revenue','ايرادات':'revenue','revenue':'revenue','revenues':'revenue',
+  'مصروفات':'expense','expense':'expense','expenses':'expense'
+};
+const LEVEL_ALIASES = { 'رئيسي':'main','رئيسى':'main','main':'main', 'فرعي':'sub','فرعى':'sub','sub':'sub' };
+
+function normalizeType(raw){
+  const t = (raw==null?'':String(raw)).trim();
+  return TYPE_ALIASES[t] || TYPE_ALIASES[t.toLowerCase()] || null;
+}
+function normalizeLevel(raw){
+  const t = (raw==null?'':String(raw)).trim();
+  return LEVEL_ALIASES[t] || LEVEL_ALIASES[t.toLowerCase()] || null;
+}
+
+function openImportAccountsModal(){
+  document.getElementById('importFileInput').value = '';
+  document.getElementById('importStatus').textContent = '';
+  document.getElementById('importStatus').className = 'num';
+  document.getElementById('importAccountsOverlay').classList.add('open');
+}
+
+// يحدد الحساب الرئيسي التابع له الفرعي: أولوية للكود لو موجود (مثلاً استعادة ملف محفوظ من البرنامج)، وإلا يتم البحث بالاسم
+function resolveParentAccount(row){
+  if(row.parentCode){
+    const byCode = accounts.find(a=>a.level==='main' && a.code===row.parentCode);
+    if(byCode) return byCode;
+  }
+  if(row.parentName){
+    let candidates = accounts.filter(a=> a.level==='main' && a.name.trim()===row.parentName.trim());
+    if(candidates.length>1 && row.type){
+      const sameType = candidates.filter(a=>a.type===row.type);
+      if(sameType.length) candidates = sameType;
+    }
+    return candidates[0] || null;
+  }
+  return null;
+}
+
+// يضيف صفوف حسابات (من إكسل أو JSON) فوق الحسابات الموجودة، من غير ما يمسح حاجة
+function importAccountsRows(rows){
+  const errors = [];
+  let addedMain = 0, addedSub = 0, skipped = 0;
+
+  rows.filter(r=> r.level!=='main' && r.level!=='sub').forEach(r=>{
+    errors.push(`الصف الخاص بـ"${r.name||'بدون اسم'}" له مستوى غير معروف (لازم يكون "رئيسي" أو "فرعي") — تم تجاهله`);
+    skipped++;
+  });
+
+  rows.filter(r=>r.level==='main').forEach(r=>{
+    if(!r.name){ errors.push('حساب رئيسي بدون اسم — تم تجاهله'); skipped++; return; }
+    if(!r.type){ errors.push(`الحساب "${r.name}" له نوع غير معروف — تم تجاهله`); skipped++; return; }
+    let code = r.code;
+    if(code && accounts.some(a=>a.code===code)){ errors.push(`الكود ${code} مستخدم بالفعل — تم تجاهل الحساب "${r.name}"`); skipped++; return; }
+    if(!code) code = nextMainCode(r.type);
+    accounts.push({code, name:r.name, type:r.type, level:'main', parentCode:null, postable:false});
+    addedMain++;
+  });
+
+  rows.filter(r=>r.level==='sub').forEach(r=>{
+    if(!r.name){ errors.push('حساب فرعي بدون اسم — تم تجاهله'); skipped++; return; }
+    if(!r.parentName && !r.parentCode){ errors.push(`الحساب "${r.name}" فرعي من غير تحديد اسم الحساب الرئيسي اللي يتبعه — تم تجاهله`); skipped++; return; }
+    const parent = resolveParentAccount(r);
+    if(!parent){ errors.push(`الحساب "${r.name}" يتبع حساب رئيسي غير موجود باسم "${r.parentName || r.parentCode}" — تأكد إن الاسم مطابق تمامًا لاسم الحساب الرئيسي`); skipped++; return; }
+    const type = r.type || parent.type;
+    let code = r.code;
+    if(code && accounts.some(a=>a.code===code)){ errors.push(`الكود ${code} مستخدم بالفعل — تم تجاهل الحساب "${r.name}"`); skipped++; return; }
+    if(!code) code = nextSubCode(parent.code);
+    accounts.push({code, name:r.name, type, level:'sub', parentCode:parent.code, postable:true});
+    addedSub++;
+  });
+
+  accounts.sort((a,b)=> a.code.localeCompare(b.code));
+  return {addedMain, addedSub, skipped, errors};
+}
+
+async function handleAccountsFileImport(){
+  const fileInput = document.getElementById('importFileInput');
+  const statusEl = document.getElementById('importStatus');
+  const file = fileInput.files[0];
+  if(!file){ statusEl.textContent = 'من فضلك اختر ملف أولاً'; statusEl.className = 'num diff-bad'; return; }
+
+  const isJson = file.name.toLowerCase().endsWith('.json');
+  try{
+    let rows;
+    if(isJson){
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const list = Array.isArray(data) ? data : (data.accounts || []);
+      rows = list.map(r=>({
+        code: r.code!=null ? String(r.code).trim() : '',
+        name: (r.name||'').toString().trim(),
+        type: normalizeType(r.type) || (['asset','liability','equity','revenue','expense'].includes(r.type)? r.type : null),
+        level: normalizeLevel(r.level) || (['main','sub'].includes(r.level)? r.level : null),
+        parentCode: r.parentCode!=null ? String(r.parentCode).trim() : null,
+        parentName: r.parentName!=null ? String(r.parentName).trim() : null
+      }));
+    } else {
+      if(typeof XLSX === 'undefined'){ statusEl.textContent = 'تعذر تحميل مكتبة قراءة الإكسل — تأكد من اتصال الإنترنت وحاول تاني'; statusEl.className = 'num diff-bad'; return; }
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, {type:'array'});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet, {defval:''});
+      rows = json.map(r=>({
+        code: String(r['الكود'] ?? r['code'] ?? '').trim(),
+        name: String(r['اسم الحساب'] ?? r['الاسم'] ?? r['name'] ?? '').trim(),
+        type: normalizeType(r['النوع'] ?? r['type']),
+        level: normalizeLevel(r['المستوى'] ?? r['level']),
+        parentName: String(r['يتبع الحساب الرئيسي'] ?? r['يتبع'] ?? r['parentName'] ?? '').trim() || null
+      }));
+    }
+
+    if(!rows.length){ statusEl.textContent = 'الملف فاضي أو مفيش صفوف قابلة للقراءة'; statusEl.className = 'num diff-bad'; return; }
+
+    const result = importAccountsRows(rows);
+    let msg = `تم استيراد ${result.addedMain} حساب رئيسي و ${result.addedSub} حساب فرعي`;
+    if(result.skipped) msg += ` — تم تجاهل ${result.skipped} صف`;
+    if(result.errors.length) msg += '. ' + result.errors.slice(0,6).join(' / ') + (result.errors.length>6? ' ...':'');
+    statusEl.textContent = msg;
+    statusEl.className = 'num ' + (result.addedMain+result.addedSub>0 ? 'diff-ok' : 'diff-bad');
+    renderAll();
+  } catch(err){
+    statusEl.textContent = 'حصل خطأ أثناء قراءة الملف: ' + err.message;
+    statusEl.className = 'num diff-bad';
+  }
+}
+
+function showToast(msg, bad){
+  let t = document.getElementById('appToast');
+  if(!t){ t = document.createElement('div'); t.id='appToast';
+    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;padding:11px 18px;border-radius:10px;font-size:13.5px;color:#fff;box-shadow:0 10px 26px rgba(0,0,0,.25);max-width:90vw;text-align:center;';
+    document.body.appendChild(t); }
+  t.style.background = bad ? '#A34632' : '#0E5C56'; t.textContent = msg; t.style.display='block';
+  clearTimeout(t._h); t._h = setTimeout(()=>{ t.style.display='none'; }, 5000);
+}
+function downloadBlob(blob, filename){
+  try{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.style.display='none';
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 4000);
+    showToast('تم حفظ الملف: ' + filename + ' — شوفي مجلد التنزيلات (Downloads)');
+  }catch(err){
+    showToast('تعذر حفظ الملف: ' + err.message, true);
+  }
+}
+function downloadWorkbook(wb, filename){
+  try{
+    const out = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    downloadBlob(new Blob([out], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), filename);
+  }catch(err){ showToast('تعذر إنشاء ملف Excel: ' + err.message, true); }
+}
+function exportAccountsJson(){
+  if(!accounts.length){ alert('لا توجد حسابات لحفظها'); return; }
+  const data = accounts.map(a=>({code:a.code, name:a.name, type:a.type, level:a.level, parentCode:a.parentCode}));
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  downloadBlob(blob, 'شجرة-الحسابات.json');
+}
+function exportAccountsExcel(){
+  if(!accounts.length){ alert('لا توجد حسابات لحفظها'); return; }
+  if(typeof XLSX === 'undefined'){ alert('تعذر تحميل مكتبة الإكسل — تأكد من اتصال الإنترنت وحاول تاني'); return; }
+  const rows = accounts.slice().sort((a,b)=>a.code.localeCompare(b.code)).map(a=>({
+    'الكود': a.code,
+    'اسم الحساب': a.name,
+    'النوع': TYPE_LABEL[a.type],
+    'المستوى': a.level==='main' ? 'رئيسي' : 'فرعي',
+    'يتبع الحساب الرئيسي': a.parentCode ? (accounts.find(x=>x.code===a.parentCode)?.name || '') : ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'شجرة الحسابات');
+  downloadWorkbook(wb, 'شجرة-الحسابات.xlsx');
+}
+
+/* ============================================================
+   SUB-ACCOUNTS (الفرعي)
+   ============================================================ */
+function openSubAccountModal(){
+  document.getElementById('subCode').value = '';
+  document.getElementById('subName').value = '';
+  document.getElementById('subAccountOverlay').classList.add('open');
+}
+function saveSubAccount(){
+  const code = document.getElementById('subCode').value.trim();
+  const name = document.getElementById('subName').value.trim();
+  if(!code || !name){ alert('من فضلك أدخل كود الفرعي واسمه'); return; }
+  if(subAccounts.some(s=>s.code===code)){ alert('هذا الكود مستخدم بالفعل'); return; }
+  subAccounts.push({code, name});
+  closeModal('subAccountOverlay');
+  renderAll();
+}
+function deleteSubAccount(code){
+  const used = entries.some(e=> e.subAccountCode===code);
+  if(used){ alert('لا يمكن حذف هذا الفرعي لأنه مستخدم في قيود موجودة'); return; }
+  if(!confirm('هل تريد حذف هذا الفرعي؟')) return;
+  subAccounts = subAccounts.filter(s=>s.code!==code);
+  renderAll();
+}
+function renderSubAccounts(){
+  const tbody = document.getElementById('subAccountsTbody');
+  tbody.innerHTML = '';
+  if(subAccounts.length===0){
+    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state">لا توجد عناصر فرعي بعد</div></td></tr>`;
+    return;
+  }
+  subAccounts.forEach(s=>{
+    tbody.innerHTML += `
+      <tr>
+        <td><span class="tree-code">${s.code}</span></td>
+        <td>${s.name}</td>
+        <td><button class="btn-danger-text" onclick="deleteSubAccount('${s.code}')">حذف</button></td>
+      </tr>`;
+  });
+}
+function subAccountOptionsHtml(selected){
+  return '<option value="">اختر الفرعي</option>' + subAccounts.map(s=>
+    `<option value="${s.code}" ${s.code===selected?'selected':''}>${s.code} — ${s.name}</option>`
+  ).join('');
+}
+
+/* ============================================================
+   COST CENTERS
+   ============================================================ */
+function openCostCenterModal(){
+  document.getElementById('ccCode').value = '';
+  document.getElementById('ccName').value = '';
+  document.getElementById('costCenterOverlay').classList.add('open');
+}
+function saveCostCenter(){
+  const code = document.getElementById('ccCode').value.trim();
+  const name = document.getElementById('ccName').value.trim();
+  if(!code || !name){ alert('من فضلك أدخل كود مركز التكلفة واسمه'); return; }
+  if(costCenters.some(c=>c.code===code)){ alert('هذا الكود مستخدم بالفعل'); return; }
+  costCenters.push({code, name});
+  closeModal('costCenterOverlay');
+  renderAll();
+}
+function deleteCostCenter(code){
+  const used = entries.some(e=> e.costCenterCode===code);
+  if(used){ alert('لا يمكن حذف مركز التكلفة هذا لأنه مستخدم في قيود موجودة'); return; }
+  if(!confirm('هل تريد حذف مركز التكلفة؟')) return;
+  costCenters = costCenters.filter(c=>c.code!==code);
+  renderAll();
+}
+function renderCostCenters(){
+  const tbody = document.getElementById('costCentersTbody');
+  tbody.innerHTML = '';
+  if(costCenters.length===0){
+    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state">لا توجد مراكز تكلفة بعد</div></td></tr>`;
+    return;
+  }
+  costCenters.forEach(c=>{
+    tbody.innerHTML += `
+      <tr>
+        <td><span class="tree-code">${c.code}</span></td>
+        <td>${c.name}</td>
+        <td><button class="btn-danger-text" onclick="deleteCostCenter('${c.code}')">حذف</button></td>
+      </tr>`;
+  });
+}
+function costCenterOptionsHtml(selected){
+  return '<option value="">اختر مركز التكلفة</option>' + costCenters.map(c=>
+    `<option value="${c.code}" ${c.code===selected?'selected':''}>${c.code} — ${c.name}</option>`
+  ).join('');
+}
+
+/* ============================================================
+   JOURNAL ENTRIES
+   ============================================================ */
+function postableAccounts(){
+  return accounts.filter(a=>a.postable).sort((a,b)=>a.code.localeCompare(b.code));
+}
+function accountOptionsHtml(selected){
+  return postableAccounts().map(a=>
+    `<option value="${a.code}" ${a.code===selected?'selected':''}>${a.code} — ${a.name}</option>`
+  ).join('');
+}
+
+function openEntryModal_OLD(){
+  document.getElementById('entDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('entDesc').value = '';
+  document.getElementById('entDebit').value = '';
+  document.getElementById('entCredit').value = '';
+  document.getElementById('entFrom').innerHTML = '<option value="">اختر الحساب</option>' + accountOptionsHtml();
+  document.getElementById('entTo').innerHTML = '<option value="">اختر الحساب</option>' + accountOptionsHtml();
+  document.getElementById('entSubAccount').innerHTML = subAccountOptionsHtml();
+  document.getElementById('entCostCenter').innerHTML = costCenterOptionsHtml();
+  updateEntryStatus();
+  document.getElementById('entryOverlay').classList.add('open');
+}
+
+
+/* ============================================================
+   AUTOCOMPLETE COMBOBOX (حسابات / فرعي / مركز تكلفة)
+   ============================================================ */
+function normAr(t){
+  return String(t==null?'':t).trim().toLowerCase()
+    .replace(/[\u064B-\u0652\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه');
+}
+const COMBO_ORDER = ['entFrom','entDebit','entTo','entCredit','entSubAccount','entCostCenter'];
+const comboSources = {
+  entFrom: ()=> postableAccounts(),
+  entTo: ()=> postableAccounts(),
+  entSubAccount: ()=> subAccounts,
+  entCostCenter: ()=> costCenters
+};
+function comboFocusNext(id){
+  const i = COMBO_ORDER.indexOf(id), nx = COMBO_ORDER[i+1];
+  if(!nx){ const b=document.getElementById('saveEntryBtn'); if(b && !b.disabled) b.focus(); return; }
+  const el = document.getElementById(nx);
+  const target = el.type==='hidden' ? el.parentElement.querySelector('.combo-input') : el;
+  if(target) target.focus();
+}
+function initCombos(){
+  document.querySelectorAll('#entryOverlay .combo').forEach(box=>{
+    if(box._init) return; box._init = true;
+    const id = box.dataset.combo, inp = box.querySelector('.combo-input'), hid = box.querySelector('input[type=hidden]'), list = box.querySelector('.combo-list');
+    let items = [], active = 0;
+    const label = it => it.code+' — '+it.name;
+    function filter(){
+      const q = normAr(inp.value), all = comboSources[id]();
+      if(!q) return all.slice();
+      const pre = [], mid = [];
+      all.forEach(it=>{
+        const n = normAr(it.name), c = normAr(it.code);
+        if(n.startsWith(q) || c.startsWith(q)) pre.push(it);
+        else if(n.includes(q) || c.includes(q)) mid.push(it);
+      });
+      return pre.concat(mid);
+    }
+    function draw(){
+      items = filter(); active = 0;
+      list.innerHTML = items.length ? items.map((it,i)=>`<div class="combo-item${i===0?' active':''}" data-i="${i}"><span class="cc">${it.code}</span><span>${it.name}</span></div>`).join('')
+        : '<div class="combo-empty">لا توجد نتائج مطابقة</div>';
+      box.classList.add('open');
+    }
+    function mark(){
+      list.querySelectorAll('.combo-item').forEach((el,i)=>el.classList.toggle('active', i===active));
+      const el = list.querySelector('.combo-item.active'); if(el) el.scrollIntoView({block:'nearest'});
+    }
+    function pick(it, advance){
+      hid.value = it.code; inp.value = label(it); box.classList.remove('open'); box.classList.remove('invalid');
+      updateEntryStatus(); if(advance) comboFocusNext(id);
+    }
+    box._set = code=>{ const it = comboSources[id]().find(x=>x.code===code); if(it){ hid.value = it.code; inp.value = label(it); } };
+    box._reset = ()=>{ hid.value=''; inp.value=''; box.classList.remove('open','invalid'); };
+    inp.addEventListener('focus', ()=>{ inp.select(); draw(); });
+    inp.addEventListener('input', ()=>{ hid.value=''; draw(); updateEntryStatus(); });
+    inp.addEventListener('keydown', ev=>{
+      if(ev.key==='ArrowDown'){ ev.preventDefault(); if(!box.classList.contains('open')) draw(); else { active=Math.min(active+1, items.length-1); mark(); } }
+      else if(ev.key==='ArrowUp'){ ev.preventDefault(); active=Math.max(active-1,0); mark(); }
+      else if(ev.key==='Enter'){ ev.preventDefault();
+        if(box.classList.contains('open') && items[active]) pick(items[active], true);
+        else if(hid.value) comboFocusNext(id); }
+      else if(ev.key==='Escape' && box.classList.contains('open')){ ev.stopPropagation(); box.classList.remove('open'); }
+    });
+    list.addEventListener('mousedown', ev=>{
+      const el = ev.target.closest('.combo-item'); if(!el) return;
+      ev.preventDefault(); pick(items[+el.dataset.i], true);
+    });
+    inp.addEventListener('blur', ()=>{
+      box.classList.remove('open');
+      if(!hid.value && inp.value.trim()){
+        const q = normAr(inp.value), exact = comboSources[id]().filter(it=>normAr(it.name)===q || normAr(it.code)===q);
+        if(exact.length===1) pick(exact[0], false); else box.classList.add('invalid');
+      }
+    });
+  });
+}
+// Enter في التاريخ/البيان/المبالغ ينقل للحقل اللي بعده
+document.addEventListener('keydown', ev=>{
+  if(ev.key!=='Enter' || !ev.target || !ev.target.closest || !ev.target.closest('#entryOverlay')) return;
+  const map = {entDate:'entDesc', entDesc:'entFrom', entDebit:'entTo', entCredit:'entSubAccount'};
+  const nx = map[ev.target.id]; if(!nx) return;
+  ev.preventDefault();
+  const el = document.getElementById(nx);
+  (el.type==='hidden' ? el.parentElement.querySelector('.combo-input') : el).focus();
+});
+
+let editingEntryId = null, entImageData = null;
+function compressImage(file){
+  return new Promise((res,rej)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>{ const img = new Image();
+      img.onload = ()=>{ const k = Math.min(1, 1200/Math.max(img.width,img.height)), c = document.createElement('canvas');
+        c.width = Math.round(img.width*k); c.height = Math.round(img.height*k);
+        const x = c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(img,0,0,c.width,c.height);
+        res(c.toDataURL('image/jpeg',0.75)); };
+      img.onerror = ()=>rej(new Error('ملف الصورة غير صالح')); img.src = fr.result; };
+    fr.onerror = ()=>rej(fr.error); fr.readAsDataURL(file);
+  });
+}
+function renderEntImagePreview(){
+  document.getElementById('entImagePreview').innerHTML = entImageData
+    ? `<img src="${entImageData}" style="max-width:100%;max-height:160px;border:1px solid var(--border);border-radius:8px;display:block;"><button type="button" class="btn-danger-text" style="margin-top:6px" onclick="removeEntImage()">إزالة الصورة</button>` : '';
+}
+function removeEntImage(){ entImageData = null; document.getElementById('entImageInput').value=''; renderEntImagePreview(); }
+async function onEntImagePicked(inp){
+  const f = inp.files[0]; if(!f) return;
+  try{ entImageData = await compressImage(f); renderEntImagePreview(); }
+  catch(err){ alert('تعذر قراءة الصورة: '+err.message); inp.value=''; }
+}
+function viewEntryImage(id){
+  const e = entries.find(x=>x.id===id); if(!e || !e.image) return;
+  document.getElementById('imageViewImg').src = e.image;
+  document.getElementById('imageViewOverlay').classList.add('open');
+}
+function openEntryModal(editId){
+  initCombos();
+  const e = editId ? entries.find(x=>x.id===editId) : null;
+  editingEntryId = e ? e.id : null;
+  document.getElementById('entryTitle').textContent = e ? 'تعديل القيد '+e.no : 'إضافة قيد';
+  document.getElementById('saveEntryBtn').textContent = e ? 'حفظ التعديل' : 'ترحيل';
+  document.getElementById('entDate').value = e ? e.date : new Date().toISOString().slice(0,10);
+  document.getElementById('entDesc').value = e ? e.desc : '';
+  document.getElementById('entDebit').value = e ? e.amount : '';
+  document.getElementById('entCredit').value = e ? e.amount : '';
+  document.querySelectorAll('#entryOverlay .combo').forEach(b=>b._reset());
+  if(e){ const q = k=>document.querySelector(`#entryOverlay .combo[data-combo="${k}"]`);
+    q('entFrom')._set(e.fromCode); q('entTo')._set(e.toCode); q('entSubAccount')._set(e.subAccountCode); q('entCostCenter')._set(e.costCenterCode); }
+  entImageData = e && e.image ? e.image : null;
+  document.getElementById('entImageInput').value = '';
+  renderEntImagePreview();
+  updateEntryStatus();
+  document.getElementById('entryOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('entDesc').focus(), 30);
+}
+
+/* ============================================================
+   IMPORT / EXPORT JOURNAL ENTRIES
+   ============================================================ */
+function findByCodeOrName(list, raw){
+  let t = String(raw==null?'':raw).trim(); if(!t) return null;
+  const byCode = list.find(x=>String(x.code).trim()===t); if(byCode) return byCode;
+  if(t.includes(' — ')){ const c = t.split(' — ')[0].trim(); const r = list.find(x=>String(x.code).trim()===c); if(r) return r; t = t.split(' — ').slice(1).join(' — ').trim(); }
+  const q = normAr(t), m = list.filter(x=>normAr(x.name)===q);
+  return m.length===1 ? m[0] : null;
+}
+function toEnDigits(t){ return String(t).replace(/[٠-٩]/g, d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)); }
+function parseEntryDate(v){
+  const pad = n=>String(n).padStart(2,'0');
+  if(typeof v==='number' && v>20000){ const d = new Date(Date.UTC(1899,11,30)+Math.round(v)*86400000); return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate()); }
+  const t = toEnDigits(v).trim(); let m;
+  if((m=t.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/))) return m[1]+'-'+pad(m[2])+'-'+pad(m[3]);
+  if((m=t.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/))) return m[3]+'-'+pad(m[2])+'-'+pad(m[1]);
+  return null;
+}
+function parseAmount(v){
+  if(typeof v==='number') return v;
+  const t = toEnDigits(v).replace(/[,،\s]/g,''); return t ? parseFloat(t) : NaN;
+}
+function openImportEntriesModal(){
+  document.getElementById('importEntriesFile').value = '';
+  const st = document.getElementById('importEntriesStatus'); st.textContent=''; st.className='num';
+  document.getElementById('importEntriesOverlay').classList.add('open');
+}
+function importEntriesRows(rows){
+  const errors = []; let added = 0, skipped = 0; const addedEntries = [];
+  const bad = (r,msg)=>{ errors.push(`صف ${r.row}: ${msg}`); skipped++; };
+  const posts = postableAccounts();
+  rows.forEach(r=>{
+    const date = parseEntryDate(r.date);
+    if(!date) return bad(r,'التاريخ غير صحيح');
+    if(!String(r.desc||'').trim()) return bad(r,'البيان فاضي');
+    const from = findByCodeOrName(posts, r.from); if(!from) return bad(r,`حساب "من" غير موجود أو غير فرعي ("${r.from||''}")`);
+    const to = findByCodeOrName(posts, r.to); if(!to) return bad(r,`حساب "الى" غير موجود أو غير فرعي ("${r.to||''}")`);
+    if(from.code===to.code) return bad(r,'من حساب والى حساب نفس الحساب');
+    const sub = findByCodeOrName(subAccounts, r.sub); if(!sub) return bad(r,`الفرعي غير موجود ("${r.sub||''}")`);
+    const cc = findByCodeOrName(costCenters, r.cc); if(!cc) return bad(r,`مركز التكلفة غير موجود ("${r.cc||''}")`);
+    let debit = parseAmount(r.debit), credit = parseAmount(r.credit);
+    if(isNaN(debit) && isNaN(credit)) return bad(r,'المبلغ فاضي');
+    if(isNaN(debit)) debit = credit; if(isNaN(credit)) credit = debit;
+    if(!(debit>0)) return bad(r,'المبلغ لازم يكون أكبر من صفر');
+    if(Math.abs(debit-credit)>=0.005) return bad(r,`القيد غير متزن (مدين ${fmt(debit)} ≠ دائن ${fmt(credit)})`);
+    const newEntry = { id:entrySeq, no:'JE-'+String(entrySeq).padStart(4,'0'), date, desc:String(r.desc).trim(), fromCode:from.code, toCode:to.code,
+      amount:debit, subAccountCode:sub.code, costCenterCode:cc.code, image:r.image||null, lines:[{code:from.code,debit,credit:0},{code:to.code,debit:0,credit:debit}] };
+    entries.push(newEntry); addedEntries.push(newEntry);
+    entrySeq++; added++;
+  });
+  return {added, skipped, errors, addedEntries};
+}
+async function handleEntriesFileImport(){
+  const st = document.getElementById('importEntriesStatus'), file = document.getElementById('importEntriesFile').files[0];
+  if(!file){ st.textContent='من فضلك اختر ملف أولاً'; st.className='num diff-bad'; return; }
+  try{
+    let rows;
+    if(file.name.toLowerCase().endsWith('.json')){
+      const data = JSON.parse(await file.text());
+      const list = Array.isArray(data) ? data : (data.entries||[]);
+      if(!Array.isArray(data)){
+        (data.subAccounts||[]).forEach(x=>{ if(x.code && !subAccounts.some(s=>s.code===x.code)) subAccounts.push({code:x.code,name:x.name}); });
+        (data.costCenters||[]).forEach(x=>{ if(x.code && !costCenters.some(c=>c.code===x.code)) costCenters.push({code:x.code,name:x.name}); });
+      }
+      rows = list.map((e,i)=>({row:i+1, date:e.date, desc:e.desc, from:e.fromCode, to:e.toCode, debit:e.amount, credit:e.amount, sub:e.subAccountCode, cc:e.costCenterCode, image:e.image}));
+    } else {
+      if(typeof XLSX==='undefined'){ st.textContent='تعذر تحميل مكتبة الإكسل — تأكد من اتصال الإنترنت وحاول تاني'; st.className='num diff-bad'; return; }
+      const wb = XLSX.read(await file.arrayBuffer(), {type:'array'});
+      const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:'', blankrows:true});
+      const g = (r,...ks)=>{ for(const k of ks){ if(r[k]!==undefined && r[k]!=='') return r[k]; } return ''; };
+      const flat = json.map((r,i)=>({row:i+2, date:g(r,'التاريخ','date'), desc:g(r,'البيان','desc'), from:g(r,'من حساب','من'), to:g(r,'الى حساب','إلى حساب','الي حساب','الى','إلى'),
+        debit:g(r,'مدين','المبلغ','amount'), credit:g(r,'دائن','المبلغ','amount'), sub:g(r,'الفرعي','فرعي'), cc:g(r,'مركز التكلفة','مركز تكلفة')}))
+        .filter(r=> r.date!=='' || r.desc!=='' || r.from!=='' || r.to!=='' || r.debit!=='' || r.credit!=='' || r.sub!=='' || r.cc!=='');
+      // صف فيه تاريخ أو بيان = بداية قيد جديد. لو الصف ده فيه حساب واحد بس (من أو الى) بيتشاف الصف اللي بعده:
+      // لو مكمله (فيه الحساب التاني وبس) بيتدمجوا في قيد واحد — سواء الصف التاني فاضي التاريخ/البيان (شكل تصدير البرنامج)
+      // أو مكرر فيه نفس التاريخ/البيان (شكل ملفات إكسل جاهزة فيها صف مدين وصف دائن لكل قيد).
+      rows = []; let cur = null;
+      for(let i=0;i<flat.length;i++){
+        const r = flat[i];
+        if(r.date!=='' || r.desc!==''){
+          const hasFrom = r.from!=='', hasTo = r.to!=='';
+          const next = flat[i+1];
+          if(hasFrom!==hasTo && next){
+            const nHasFrom = next.from!=='', nHasTo = next.to!=='';
+            if(hasFrom && !hasTo && nHasTo && !nHasFrom){
+              cur = {row:r.row, date:r.date, desc:r.desc, from:r.from, to:next.to, debit:r.debit, credit:next.credit,
+                     sub:(r.sub!==''?r.sub:next.sub), cc:(r.cc!==''?r.cc:next.cc)};
+              rows.push(cur); i++; continue;
+            }
+            if(hasTo && !hasFrom && nHasFrom && !nHasTo){
+              cur = {row:r.row, date:r.date, desc:r.desc, from:next.from, to:r.to, debit:next.debit, credit:r.credit,
+                     sub:(r.sub!==''?r.sub:next.sub), cc:(r.cc!==''?r.cc:next.cc)};
+              rows.push(cur); i++; continue;
+            }
+          }
+          cur = Object.assign({}, r); rows.push(cur);
+        } else if(cur){
+          ['from','to','debit','credit','sub','cc'].forEach(k=>{ if(cur[k]==='' && r[k]!=='') cur[k]=r[k]; });
+        } else rows.push(r);
+      }
+    }
+    if(!rows.length){ st.textContent='الملف فاضي أو مفيش صفوف قابلة للقراءة'; st.className='num diff-bad'; return; }
+    const res = importEntriesRows(rows);
+    let msg = `تم استيراد ${res.added} قيد`; if(res.skipped) msg += ` — تم تجاهل ${res.skipped} صف`;
+    if(res.errors.length) msg += '\n' + res.errors.slice(0,8).join('\n') + (res.errors.length>8 ? '\n...':'');
+    st.textContent = msg; st.className = 'num ' + (res.added>0 ? 'diff-ok':'diff-bad');
+    renderAll();
+    if(res.addedEntries.length) pushEntriesBatchRemote(res.addedEntries);
+  }catch(err){ st.textContent='حصل خطأ أثناء قراءة الملف: '+err.message; st.className='num diff-bad'; }
+}
+function exportEntriesExcel(){
+  if(!entries.length){ alert('لا توجد قيود لحفظها'); return; }
+  if(typeof XLSX==='undefined'){ alert('تعذر تحميل مكتبة الإكسل — تأكد من اتصال الإنترنت وحاول تاني'); return; }
+  const lab = (list,code)=>{ const x=list.find(i=>i.code===code); return x ? x.code+' — '+x.name : code; };
+  const rows = [], merges = [];
+  entries.slice().sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id).forEach(e=>{
+    const sub = lab(subAccounts,e.subAccountCode), cc = lab(costCenters,e.costCenterCode), r0 = rows.length + 1;
+    rows.push({'التاريخ':e.date,'البيان':e.desc,'من حساب':lab(accounts,e.fromCode),'الى حساب':'','الفرعي':sub,'مركز التكلفة':cc,'مدين':e.amount,'دائن':''});
+    rows.push({'التاريخ':'','البيان':'','من حساب':'','الى حساب':lab(accounts,e.toCode),'الفرعي':sub,'مركز التكلفة':cc,'مدين':'','دائن':e.amount});
+    merges.push({s:{r:r0,c:0},e:{r:r0+1,c:0}}, {s:{r:r0,c:1},e:{r:r0+1,c:1}});
+  });
+  const ws = XLSX.utils.json_to_sheet(rows, {header:['التاريخ','البيان','من حساب','الى حساب','الفرعي','مركز التكلفة','مدين','دائن']});
+  ws['!merges'] = merges;
+  ws['!cols'] = [12,34,30,30,24,26,14,14].map(w=>({wch:w}));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'قيود اليومية');
+  downloadWorkbook(wb, 'قيود-اليومية.xlsx');
+}
+function exportEntriesJson(){
+  if(!entries.length){ alert('لا توجد قيود لحفظها'); return; }
+  const data = { entries: entries.map(e=>({no:e.no, date:e.date, desc:e.desc, fromCode:e.fromCode, toCode:e.toCode, amount:e.amount, subAccountCode:e.subAccountCode, costCenterCode:e.costCenterCode, image:e.image||null})),
+    subAccounts, costCenters };
+  downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}), 'قيود-اليومية.json');
+}
+
+// كل حقل مطلوب: التاريخ، البيان، من حساب، الى حساب، الفرعي، مركز التكلفة، ومبلغ المدين لازم يساوي مبلغ الدائن تمامًا
+function updateEntryStatus(){
+  const date = document.getElementById('entDate').value;
+  const desc = document.getElementById('entDesc').value.trim();
+  const from = document.getElementById('entFrom').value;
+  const to = document.getElementById('entTo').value;
+  const sub = document.getElementById('entSubAccount').value;
+  const cc = document.getElementById('entCostCenter').value;
+  const debit = parseFloat(document.getElementById('entDebit').value)||0;
+  const credit = parseFloat(document.getElementById('entCredit').value)||0;
+  const diffEl = document.getElementById('entDiff');
+
+  let msg = null;
+  if(!date) msg = 'من فضلك أدخل التاريخ';
+  else if(!desc) msg = 'من فضلك أدخل البيان';
+  else if(!from) msg = 'من فضلك اختر "من حساب"';
+  else if(!to) msg = 'من فضلك اختر "الى حساب"';
+  else if(from===to) msg = 'من حساب والى حساب لا يمكن أن يكونا نفس الحساب';
+  else if(!cc) msg = 'من فضلك اختر مركز التكلفة';
+  else if(debit<=0) msg = 'من فضلك أدخل مبلغ المدين';
+  else if(credit<=0) msg = 'من فضلك أدخل مبلغ الدائن';
+  else if(Math.abs(debit-credit)>=0.005) msg = 'القيد غير متزن — المدين (' + fmt(debit) + ') لا يساوي الدائن (' + fmt(credit) + ')';
+
+  const ok = !msg;
+  diffEl.textContent = ok ? 'القيد متزن ✓ جاهز للترحيل' : msg;
+  diffEl.className = 'num ' + (ok ? 'diff-ok':'diff-bad');
+  document.getElementById('saveEntryBtn').disabled = !ok;
+  return ok;
+}
+// تحديث حالة القيد لحظيًا مع أي تغيير في الفورم
+document.addEventListener('input', (ev)=>{
+  if(ev.target && ev.target.closest && ev.target.closest('#entryOverlay')) updateEntryStatus();
+});
+document.addEventListener('change', (ev)=>{
+  if(ev.target && ev.target.closest && ev.target.closest('#entryOverlay')) updateEntryStatus();
+});
+
+function saveEntry(){
+  if(!updateEntryStatus()){
+    alert('لا يمكن الترحيل — لازم تكمل كل بيانات القيد (التاريخ، البيان، من حساب، الى حساب، مركز التكلفة) ويكون المدين مساوي للدائن');
+    return;
+  }
+  const date = document.getElementById('entDate').value;
+  const desc = document.getElementById('entDesc').value.trim();
+  const fromCode = document.getElementById('entFrom').value;
+  const toCode = document.getElementById('entTo').value;
+  const subAccountCode = document.getElementById('entSubAccount').value;
+  const costCenterCode = document.getElementById('entCostCenter').value;
+  const debit = parseFloat(document.getElementById('entDebit').value)||0;
+  const credit = parseFloat(document.getElementById('entCredit').value)||0;
+
+  const lines = [{code:fromCode, debit, credit:0}, {code:toCode, debit:0, credit}];
+  const cur = editingEntryId ? entries.find(x=>x.id===editingEntryId) : null;
+  let savedEntry;
+  if(cur){ Object.assign(cur, {date, desc, fromCode, toCode, amount:debit, subAccountCode, costCenterCode, lines, image:entImageData}); savedEntry = cur; }
+  else { savedEntry = { id:entrySeq, no:'JE-'+String(entrySeq).padStart(4,'0'), date, desc, fromCode, toCode, amount:debit, subAccountCode, costCenterCode, lines, image:entImageData };
+    entries.push(savedEntry); entrySeq++; }
+  editingEntryId = null;
+  closeModal('entryOverlay');
+  renderAll();
+  pushEntryRemote(savedEntry);
+  if(!subAccountCode) showToast('تم ترحيل القيد — تنبيه: لسه مكتبتش حاجة في البند الفرعي', true);
+}
+
+function deleteEntry(id){
+  if(!confirm('هل تريد حذف هذا القيد؟')) return;
+  entries = entries.filter(e=>e.id!==id);
+  renderAll();
+  removeEntryRemote(id);
+}
+
+function deleteAllEntries(){
+  if(!entries.length){ showToast('لا توجد قيود لحذفها', true); return; }
+  if(!confirm('هل تريدين حذف كل القيود (' + entries.length + ' قيد)؟ الإجراء ده مش هينفع يترجع.')) return;
+  if(!confirm('تأكيد أخير: هيتم حذف كل القيود نهائيًا. متأكدة؟')) return;
+  entries = [];
+  entrySeq = 1;
+  renderAll();
+  clearAllEntriesRemote();
+  showToast('تم حذف كل القيود');
+}
+
+function clearJournalFilters(){
+  const s=document.getElementById('journalSearchInput'), f=document.getElementById('journalDateFrom'), t=document.getElementById('journalDateTo');
+  const box=document.getElementById('journalAccountCombo');
+  if(s) s.value='';
+  if(f) f.value='';
+  if(t) t.value='';
+  if(box && box._reset) box._reset();
+  renderJournal();
+}
+// كومبو البحث عن حساب في فلتر قيود اليومية — نفس فكرة كومبو دفتر الأستاذ، لكن بيسمح بترك الاختيار فاضي (كل الحسابات)
+function initJournalAccountCombo(){
+  const box = document.getElementById('journalAccountCombo');
+  if(!box || box._init) return;
+  box._init = true;
+  const inp = document.getElementById('journalAccountInput');
+  const hid = document.getElementById('journalAccountFilter');
+  const list = box.querySelector('.combo-list');
+  const ALL_LABEL = 'كل الحسابات';
+  let items = [], active = 0;
+  const label = it => it.code + ' — ' + it.name;
+  function filter(){
+    const q = normAr(inp.value), all = postableAccounts();
+    if(!q) return all.slice();
+    const pre = [], mid = [];
+    all.forEach(it=>{
+      const n = normAr(it.name), c = normAr(it.code);
+      if(n.startsWith(q) || c.startsWith(q)) pre.push(it);
+      else if(n.includes(q) || c.includes(q)) mid.push(it);
+    });
+    return pre.concat(mid);
+  }
+  function draw(){
+    items = filter(); active = 0;
+    const allRow = `<div class="combo-item${!hid.value?' active':''}" data-i="all"><span>${ALL_LABEL}</span></div>`;
+    list.innerHTML = allRow + (items.length ? items.map((it,i)=>`<div class="combo-item" data-i="${i}"><span class="cc">${it.code}</span><span>${it.name}</span></div>`).join('')
+      : '<div class="combo-empty">لا توجد نتائج مطابقة</div>');
+    box.classList.add('open');
+  }
+  function mark(){
+    const rows = list.querySelectorAll('.combo-item');
+    rows.forEach((el,i)=>el.classList.toggle('active', i===active));
+    const el = rows[active]; if(el) el.scrollIntoView({block:'nearest'});
+  }
+  function pickAll(){ hid.value=''; inp.value=''; box.classList.remove('open'); renderJournal(); }
+  function pick(it){ hid.value = it.code; inp.value = label(it); box.classList.remove('open'); renderJournal(); }
+  box._reset = ()=>{ hid.value=''; inp.value=''; };
+  box._set = code=>{ const it = postableAccounts().find(x=>x.code===code); if(it){ hid.value = it.code; inp.value = label(it); } else { hid.value=''; inp.value=''; } };
+  inp.addEventListener('focus', ()=>{ inp.select(); draw(); });
+  inp.addEventListener('input', ()=>{ draw(); });
+  inp.addEventListener('keydown', ev=>{
+    const rowCount = () => list.querySelectorAll('.combo-item').length;
+    if(ev.key==='ArrowDown'){ ev.preventDefault(); if(!box.classList.contains('open')) draw(); else { active=Math.min(active+1, rowCount()-1); mark(); } }
+    else if(ev.key==='ArrowUp'){ ev.preventDefault(); active=Math.max(active-1,0); mark(); }
+    else if(ev.key==='Enter'){ ev.preventDefault(); if(box.classList.contains('open')){ if(active===0) pickAll(); else if(items[active-1]) pick(items[active-1]); } }
+    else if(ev.key==='Escape' && box.classList.contains('open')){ ev.stopPropagation(); box.classList.remove('open'); }
+  });
+  list.addEventListener('mousedown', ev=>{
+    const el = ev.target.closest('.combo-item'); if(!el) return;
+    ev.preventDefault();
+    if(el.dataset.i==='all') pickAll(); else pick(items[+el.dataset.i]);
+  });
+  inp.addEventListener('blur', ()=>{
+    box.classList.remove('open');
+    const it = postableAccounts().find(x=>x.code===hid.value);
+    inp.value = it ? label(it) : '';
+  });
+  document.addEventListener('mousedown', ev=>{ if(!box.contains(ev.target)) box.classList.remove('open'); });
+}
+function populateJournalAccountFilter(){
+  initJournalAccountCombo();
+  const box = document.getElementById('journalAccountCombo');
+  const hid = document.getElementById('journalAccountFilter');
+  if(hid && hid.value && !postableAccounts().some(a=>a.code===hid.value)){
+    if(box && box._reset) box._reset();
+  } else if(box && box._set){
+    box._set(hid.value);
+  }
+}
+function filterJournalEntries(list){
+  const sEl = document.getElementById('journalSearchInput');
+  const fEl = document.getElementById('journalDateFrom');
+  const tEl = document.getElementById('journalDateTo');
+  const aEl = document.getElementById('journalAccountFilter');
+  const q = normAr(sEl ? sEl.value : '');
+  const from = fEl ? fEl.value : '';
+  const to = tEl ? tEl.value : '';
+  const accCode = aEl ? aEl.value : '';
+  return list.filter(e=>{
+    if(from && e.date < from) return false;
+    if(to && e.date > to) return false;
+    if(accCode && e.fromCode!==accCode && e.toCode!==accCode) return false;
+    if(q){
+      const cc = costCenters.find(c=>c.code===e.costCenterCode);
+      const hay = normAr((e.desc||'') + ' ' + (cc ? cc.name : ''));
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+function renderJournal(){
+  const tbody = document.getElementById('journalTbody');
+  tbody.innerHTML = '';
+  const filtered = filterJournalEntries(entries);
+  if(entries.length===0){
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">لا توجد قيود بعد — اضغط "إضافة قيد" لتسجيل أول عملية</div></td></tr>`;
+    return;
+  }
+  if(filtered.length===0){
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">لا توجد نتائج مطابقة لبحثك</div></td></tr>`;
+    return;
+  }
+  const dash = '<span class="muted">—</span>';
+  filtered.slice().sort((a,b)=> a.date.localeCompare(b.date) || a.id-b.id).forEach(e=>{
+    const fromAcc = accounts.find(a=>a.code===e.fromCode);
+    const toAcc = accounts.find(a=>a.code===e.toCode);
+    const sub = subAccounts.find(s=>s.code===e.subAccountCode);
+    const cc = costCenters.find(c=>c.code===e.costCenterCode);
+    const subTxt = sub ? sub.name : dash, ccTxt = cc ? cc.name : dash;
+    const tr = document.createElement('tr'); tr.className = 'je-row';
+    tr.innerHTML = `
+      <td class="num date-col">${e.date}</td>
+      <td>${e.desc}<div class="muted" style="font-size:11px;margin-top:3px;">${e.no}</div></td>
+      <td>${fromAcc? fromAcc.code+' — '+fromAcc.name : e.fromCode}</td>
+      <td>${toAcc? toAcc.code+' — '+toAcc.name : e.toCode}</td>
+      <td>${subTxt}</td>
+      <td>${ccTxt}</td>
+      <td class="num debit">${fmt(e.amount)}</td>
+      <td class="num credit">${fmt(e.amount)}</td>
+      <td style="white-space:nowrap"><button class="btn-edit-text" onclick="openEntryModal(${e.id})">تعديل</button> <button class="btn-danger-text" onclick="deleteEntry(${e.id})">حذف</button>${e.image?`<div><button class="btn-edit-text" onclick="viewEntryImage(${e.id})">📎 عرض المرفق</button></div>`:''}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ============================================================
+   COMPUTATION HELPERS
+   ============================================================ */
+function accountFlows(code){
+  let debit=0, credit=0;
+  entries.forEach(e=> e.lines.forEach(l=>{ if(l.code===code){ debit+=l.debit; credit+=l.credit; } }));
+  return {debit, credit};
+}
+// الحسابات الفرعية اللي فعلاً عليها قيود (حركة مدين أو دائن) — بنستخدمها بدل postableAccounts() في أي مكان
+// المفروض يظهر فيه الحسابات "الشغالة" بس، من غير زحمة الحسابات اللي لسه من غير أي قيد
+function accountsWithMovement(){
+  return postableAccounts().filter(a=>{
+    const {debit,credit} = accountFlows(a.code);
+    return debit!==0 || credit!==0;
+  });
+}
+// natural balance sign: asset/expense -> debit positive ; liability/equity/revenue -> credit positive
+function accountBalance(a){
+  const {debit,credit} = accountFlows(a.code);
+  if(a.type==='asset' || a.type==='expense') return debit - credit;
+  return credit - debit;
+}
+function computeNetIncome(){
+  let rev=0, exp=0;
+  postableAccounts().filter(a=>a.type==='revenue').forEach(a=> rev += accountBalance(a));
+  postableAccounts().filter(a=>a.type==='expense').forEach(a=> exp += accountBalance(a));
+  return {rev, exp, net: rev-exp};
+}
+
+/* ============================================================
+   LEDGER
+   ============================================================ */
+function initLedgerAccountCombo(){
+  const box = document.getElementById('ledgerAccountCombo');
+  if(!box || box._init) return;
+  box._init = true;
+  const inp = document.getElementById('ledgerAccountInput');
+  const hid = document.getElementById('ledgerAccountSelect');
+  const list = box.querySelector('.combo-list');
+  let items = [], active = 0;
+  const label = it => it.code + ' — ' + it.name;
+  function filter(){
+    const q = normAr(inp.value), all = accountsWithMovement();
+    if(!q) return all.slice();
+    const pre = [], mid = [];
+    all.forEach(it=>{
+      const n = normAr(it.name), c = normAr(it.code);
+      if(n.startsWith(q) || c.startsWith(q)) pre.push(it);
+      else if(n.includes(q) || c.includes(q)) mid.push(it);
+    });
+    return pre.concat(mid);
+  }
+  function draw(){
+    items = filter(); active = 0;
+    list.innerHTML = items.length ? items.map((it,i)=>`<div class="combo-item${i===0?' active':''}" data-i="${i}"><span class="cc">${it.code}</span><span>${it.name}</span></div>`).join('')
+      : '<div class="combo-empty">لا توجد حسابات عليها حركة</div>';
+    box.classList.add('open');
+  }
+  function mark(){
+    list.querySelectorAll('.combo-item').forEach((el,i)=>el.classList.toggle('active', i===active));
+    const el = list.querySelector('.combo-item.active'); if(el) el.scrollIntoView({block:'nearest'});
+  }
+  function pick(it){
+    hid.value = it.code; inp.value = label(it); box.classList.remove('open');
+    renderLedger();
+  }
+  box._set = code=>{ const it = accountsWithMovement().find(x=>x.code===code); if(it){ hid.value = it.code; inp.value = label(it); } };
+  inp.addEventListener('focus', ()=>{ inp.select(); draw(); });
+  inp.addEventListener('input', ()=>{ draw(); });
+  inp.addEventListener('keydown', ev=>{
+    if(ev.key==='ArrowDown'){ ev.preventDefault(); if(!box.classList.contains('open')) draw(); else { active=Math.min(active+1, items.length-1); mark(); } }
+    else if(ev.key==='ArrowUp'){ ev.preventDefault(); active=Math.max(active-1,0); mark(); }
+    else if(ev.key==='Enter'){ ev.preventDefault(); if(box.classList.contains('open') && items[active]) pick(items[active]); }
+    else if(ev.key==='Escape' && box.classList.contains('open')){ ev.stopPropagation(); box.classList.remove('open'); }
+  });
+  list.addEventListener('mousedown', ev=>{
+    const el = ev.target.closest('.combo-item'); if(!el) return;
+    ev.preventDefault(); pick(items[+el.dataset.i]);
+  });
+  inp.addEventListener('blur', ()=>{
+    box.classList.remove('open');
+    const it = accountsWithMovement().find(x=>x.code===hid.value);
+    inp.value = it ? label(it) : '';
+  });
+  document.addEventListener('mousedown', ev=>{ if(!box.contains(ev.target)) box.classList.remove('open'); });
+}
+function populateLedgerSelect(){
+  initLedgerAccountCombo();
+  const hid = document.getElementById('ledgerAccountSelect');
+  const box = document.getElementById('ledgerAccountCombo');
+  const accs = accountsWithMovement();
+  let current = hid.value;
+  if(!current || !accs.some(a=>a.code===current)) current = accs.length ? accs[0].code : '';
+  hid.value = current;
+  if(box && box._set) box._set(current);
+}
+function renderLedger(){
+  const sel = document.getElementById('ledgerAccountSelect');
+  const code = sel.value;
+  const acc = accounts.find(a=>a.code===code);
+  const tbody = document.getElementById('ledgerTbody');
+  const kpis = document.getElementById('ledgerKpis');
+  tbody.innerHTML = '';
+  if(!acc){ kpis.innerHTML=''; tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state">لا توجد حسابات عليها قيود حتى الآن</div></td></tr>`; return; }
+
+  const rows = [];
+  entries.forEach(e=> e.lines.forEach(l=>{ if(l.code===code) rows.push({date:e.date, no:e.no, desc:e.desc, debit:l.debit, credit:l.credit}); }));
+  rows.sort((a,b)=> a.date.localeCompare(b.date));
+
+  const increases = (acc.type==='asset'||acc.type==='expense');
+  let running = 0, totalD=0, totalC=0;
+  if(rows.length===0){
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state">لا توجد حركة على هذا الحساب</div></td></tr>`;
+  }
+  rows.forEach(r=>{
+    running += increases ? (r.debit-r.credit) : (r.credit-r.debit);
+    totalD += r.debit; totalC += r.credit;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="num date-col">${r.date}</td>
+      <td>${r.desc}</td>
+      <td class="num amt-num">${r.debit? fmt(r.debit): ''}</td>
+      <td class="num amt-num">${r.credit? fmt(r.credit): ''}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  kpis.innerHTML = `
+    <div class="kpi kpi-debit"><div class="label">${REPORT_SUM_ICONS.debit}إجمالي مدين</div><div class="value num">${fmt(totalD)}</div></div>
+    <div class="kpi kpi-credit"><div class="label">${REPORT_SUM_ICONS.credit}إجمالي دائن</div><div class="value num">${fmt(totalC)}</div></div>
+    <div class="kpi kpi-ok"><div class="label">${REPORT_SUM_ICONS.balance}الرصيد الحالي — ${acc.name}</div><div class="value num">${fmt(running)}</div></div>
+  `;
+}
+
+/* ============================================================
+   طباعة/حفظ التقارير PDF — نمط موحّد واحترافي لأي تقرير في النظام
+   (بيانات الشركة + شعارها من الإعدادات تُستخدم تلقائيًا في كل تقرير)
+   ============================================================ */
+function escHtml(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+const REPORT_PRINT_CSS = `
+  @page{ size:A4; margin:14mm 12mm; }
+  *{ box-sizing:border-box; }
+  body{ font-family:'IBM Plex Sans Arabic',Tahoma,Arial,sans-serif; color:#000; font-size:13px; margin:0; font-weight:500; }
+  .hd{ display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0E5C56; padding-bottom:10px; margin-bottom:16px; gap:12px; }
+  .hd-left{ display:flex; align-items:flex-start; gap:10px; }
+  .hd-left img{ width:44px; height:44px; object-fit:contain; border-radius:6px; }
+  .hd h1{ margin:0 0 4px; font-size:19px; color:#0E5C56; }
+  .hd .co{ font-weight:700; font-size:13px; }
+  .hd .sub{ font-size:11.5px; color:#555; margin-top:2px; }
+  .hd .meta{ text-align:left; font-size:11px; color:#555; white-space:nowrap; }
+  .sum{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:10px; margin-bottom:18px; }
+  .sum-card{ position:relative; overflow:hidden; border-radius:10px; padding:12px 14px; border:1px solid rgba(0,0,0,.05);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .sum-card::before{ content:''; position:absolute; inset-inline-start:0; top:0; bottom:0; width:4px; }
+  .sum-card .lbl{ display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:800; margin-bottom:8px; }
+  .sum-card .lbl svg{ width:13px; height:13px; flex:none; }
+  .sum-card b{ display:block; font-size:21px; font-weight:800; direction:ltr; unicode-bidi:isolate; letter-spacing:.2px; }
+  .sum-debit{ background:#E7EEF5; } .sum-debit::before{ background:#2E5F8A; } .sum-debit .lbl, .sum-debit b{ color:#2E5F8A; }
+  .sum-credit{ background:#F5EBE0; } .sum-credit::before{ background:#A9702F; } .sum-credit .lbl, .sum-credit b{ color:#A9702F; }
+  .sum-balance{ background:#E3EFEC; } .sum-balance::before{ background:#0E5C56; } .sum-balance .lbl, .sum-balance b{ color:#0E5C56; }
+  .sum-neutral{ background:#F1F3F2; } .sum-neutral::before{ background:#5B6864; } .sum-neutral .lbl, .sum-neutral b{ color:#3c4744; }
+  table{ width:100%; border-collapse:collapse; }
+  th{ background:#0E5C56; color:#fff; padding:7px 8px; font-size:11.8px; font-weight:700; text-align:right; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  td{ padding:6px 8px; border-bottom:1px solid #e2e8e6; vertical-align:top; color:#000; font-size:12.5px; font-weight:700; }
+  .n{ text-align:left; direction:ltr; unicode-bidi:isolate; white-space:nowrap; }
+  tbody .n{ font-weight:700; color:#000; }
+  th.n{ text-align:left; }
+  .dt{ text-align:right; direction:ltr; unicode-bidi:isolate; white-space:nowrap; }
+  tbody .dt{ font-weight:700; color:#000; }
+  thead th{ color:#fff !important; font-weight:700; }
+  tr{ page-break-inside:avoid; }
+  thead{ display:table-header-group; }
+  tfoot td{ font-weight:700; background:#E3EFEC; border-top:2px solid #0E5C56; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .ft{ margin-top:18px; padding-top:8px; border-top:1px solid #e2e8e6; font-size:10px; color:#8a938f; display:flex; justify-content:space-between; }
+`;
+
+const REPORT_SUM_ICONS = {
+  debit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>',
+  credit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
+  balance: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>',
+  neutral: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/></svg>'
+};
+function reportSumCardHtml(kind, label, value){
+  return `<div class="sum-card sum-${kind}"><div class="lbl">${REPORT_SUM_ICONS[kind]||''}${escHtml(label)}</div><b>${escHtml(value)}</b></div>`;
+}
+function buildReportDocument({title, subtitleHtml, metaHtml, sumCardsHtml, tableHtml, docTitle}){
+  const logoHtml = companyInfo.logo ? `<img src="${companyInfo.logo}" alt="شعار الشركة">` : '';
+  return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${escHtml(docTitle||title)}</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<style>${REPORT_PRINT_CSS}</style></head><body>
+  <div class="hd">
+    <div class="hd-left">${logoHtml}<div><div class="co">${escHtml(companyInfo.name||'')}</div><h1>${escHtml(title)}</h1>${subtitleHtml?`<div class="sub">${subtitleHtml}</div>`:''}</div></div>
+    <div class="meta">${metaHtml||''}</div>
+  </div>
+  ${sumCardsHtml? `<div class="sum">${sumCardsHtml}</div>` : ''}
+  ${tableHtml}
+  <div class="ft"><span>${escHtml(companyInfo.name||'دفترة')}</span><span>تم إنشاء التقرير بتاريخ ${new Date().toLocaleDateString('en-GB')}</span></div>
+</body></html>`;
+}
+function openPrintWindow(html, frameIdBase){
+  const id = (frameIdBase||'print') + 'Frame';
+  const old = document.getElementById(id); if(old) old.remove();
+  const fr = document.createElement('iframe');
+  fr.id = id;
+  fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+  document.body.appendChild(fr);
+  const doPrint = ()=>{ try{ fr.contentWindow.focus(); fr.contentWindow.print(); }catch(err){ showToast('تعذر فتح نافذة الطباعة: '+err.message, true); } };
+  fr.onload = ()=>{
+    const w = fr.contentWindow;
+    const ready = (w.document.fonts && w.document.fonts.ready) ? w.document.fonts.ready : Promise.resolve();
+    Promise.race([ready, new Promise(r=>setTimeout(r,1500))]).then(doPrint);
+  };
+  fr.srcdoc = html;
+  showToast('في نافذة الطباعة اختر "حفظ بتنسيق PDF" (Save as PDF) كوجهة الطباعة');
+}
+
+/* ---------- تصدير دفتر الأستاذ (Excel / PDF) ---------- */
+function getLedgerData(){
+  const code = document.getElementById('ledgerAccountSelect').value;
+  const acc = accounts.find(a=>a.code===code);
+  if(!acc) return null;
+  const rows = [];
+  entries.forEach(e=> e.lines.forEach(l=>{ if(l.code===code) rows.push({date:e.date, no:e.no, desc:e.desc, debit:l.debit, credit:l.credit}); }));
+  rows.sort((a,b)=> a.date.localeCompare(b.date));
+  const increases = (acc.type==='asset'||acc.type==='expense');
+  let running = 0, totalD = 0, totalC = 0;
+  rows.forEach(r=>{
+    running += increases ? (r.debit-r.credit) : (r.credit-r.debit);
+    totalD += r.debit; totalC += r.credit;
+    r.balance = running;
+  });
+  return {acc, rows, totalD, totalC, balance: running};
+}
+function ledgerFileName(acc, ext){
+  return ('دفتر-الأستاذ-' + acc.code + '-' + acc.name).replace(/[\\\/:*?"<>|\s]+/g,'-') + '.' + ext;
+}
+function exportLedgerExcel(){
+  const d = getLedgerData();
+  if(!d){ alert('اختر حسابًا الأول'); return; }
+  if(!d.rows.length){ alert('لا توجد حركة على هذا الحساب لحفظها'); return; }
+  if(typeof XLSX==='undefined'){ alert('تعذر تحميل مكتبة الإكسل — تأكد من اتصال الإنترنت وحاول تاني'); return; }
+  const company = companyInfo.name || '';
+  const aoa = [
+    [company],
+    ['دفتر الأستاذ'],
+    ['الحساب', d.acc.code + ' — ' + d.acc.name],
+    ['تاريخ التقرير', new Date().toLocaleDateString('en-GB')],
+    [],
+    ['التاريخ','البيان','مدين','دائن']
+  ];
+  d.rows.forEach(r=> aoa.push([r.date, r.desc, r.debit||'', r.credit||'']));
+  aoa.push(['','الإجمالي', d.totalD, d.totalC]);
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [12,44,16,16].map(w=>({wch:w}));
+  ws['!merges'] = [{s:{r:0,c:0},e:{r:0,c:3}},{s:{r:1,c:0},e:{r:1,c:3}}];
+  // تنسيق الأرقام (خانتين عشريتين)
+  for(let R=6; R<aoa.length; R++){
+    for(let C=2; C<=3; C++){
+      const cell = ws[XLSX.utils.encode_cell({r:R,c:C})];
+      if(cell && typeof cell.v==='number') cell.z = '#,##0.00';
+    }
+  }
+  const wb = XLSX.utils.book_new();
+  wb.Workbook = {Views:[{RTL:true}]};
+  XLSX.utils.book_append_sheet(wb, ws, 'دفتر الأستاذ');
+  downloadWorkbook(wb, ledgerFileName(d.acc,'xlsx'));
+}
+function exportLedgerPdf(){
+  const d = getLedgerData();
+  if(!d){ alert('اختر حسابًا الأول'); return; }
+  if(!d.rows.length){ alert('لا توجد حركة على هذا الحساب لحفظها'); return; }
+  const body = d.rows.map(r=>`<tr>
+      <td class="dt">${escHtml(r.date)}</td><td>${escHtml(r.desc)}</td>
+      <td class="n">${r.debit? fmt(r.debit):''}</td><td class="n">${r.credit? fmt(r.credit):''}</td></tr>`).join('');
+  const tableHtml = `<table>
+    <thead><tr><th>التاريخ</th><th>البيان</th><th class="n">مدين</th><th class="n">دائن</th></tr></thead>
+    <tbody>${body}</tbody>
+    <tfoot><tr><td>الإجمالي</td><td></td><td class="n">${fmt(d.totalD)}</td><td class="n">${fmt(d.totalC)}</td></tr></tfoot>
+  </table>`;
+  const sumCardsHtml = reportSumCardHtml('debit','إجمالي مدين', fmt(d.totalD))
+    + reportSumCardHtml('credit','إجمالي دائن', fmt(d.totalC))
+    + reportSumCardHtml('balance','الرصيد الحالي', fmt(d.balance));
+  const html = buildReportDocument({
+    title: 'دفتر الأستاذ',
+    subtitleHtml: `الحساب: <b>${escHtml(d.acc.code)} — ${escHtml(d.acc.name)}</b>`,
+    metaHtml: `تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}<br>عدد الحركات: ${d.rows.length}`,
+    sumCardsHtml,
+    tableHtml,
+    docTitle: ledgerFileName(d.acc,'pdf').replace(/\.pdf$/,'')
+  });
+  openPrintWindow(html, 'ledgerPrint');
+}
+
+/* ============================================================
+   TRIAL BALANCE
+   ============================================================ */
+function clearTrialFilters(){
+  const s=document.getElementById('trialSearchInput');
+  if(s) s.value='';
+  renderTrialBalance();
+}
+function balanceCellHtml(bal){
+  if(Math.abs(bal) < 0.005) return '<span class="muted">—</span>';
+  return bal>0
+    ? `<span class="bal-debit">${fmt(bal)} مدين</span>`
+    : `<span class="bal-credit">${fmt(Math.abs(bal))} دائن</span>`;
+}
+function getTrialBalanceData(){
+  let td=0, tc=0;
+  const mains = accounts.filter(a=>a.level==='main').sort((a,b)=>a.code.localeCompare(b.code));
+  const groups = [];
+  mains.forEach(m=>{
+    const subs = accounts.filter(a=>a.level==='sub' && a.parentCode===m.code).sort((a,b)=>a.code.localeCompare(b.code));
+    if(subs.length===0) return; // حساب رئيسي بدون فرعي لا يظهر بميزان المراجعة
+    let mainDebit=0, mainCredit=0;
+    const subRows = subs.map(a=>{
+      const {debit,credit} = accountFlows(a.code);
+      return {acc:a, debit, credit, balance: debit-credit};
+    }).filter(r=> r.debit!==0 || r.credit!==0); // إخفاء أي حساب فرعي معملوش عليه أي قيود
+    if(subRows.length===0) return; // مفيش فروع عليها حركة -> الحساب الرئيسي كله ميظهرش
+    subRows.forEach(r=>{ mainDebit+=r.debit; mainCredit+=r.credit; });
+    td += mainDebit; tc += mainCredit;
+    groups.push({main:m, mainDebit, mainCredit, mainBalance: mainDebit-mainCredit, subRows});
+  });
+  return {groups, td, tc};
+}
+function renderTrialBalance(){
+  const tbody = document.getElementById('trialTbody');
+  tbody.innerHTML = '';
+  const {groups, td, tc} = getTrialBalanceData();
+  const q = normAr((document.getElementById('trialSearchInput')||{}).value||'');
+
+  let shownDebit=0, shownCredit=0, shownBalance=0, anyRow=false;
+  groups.forEach(g=>{
+    const mainMatch = !q || normAr(g.main.code).includes(q) || normAr(g.main.name).includes(q);
+    const subRows = mainMatch ? g.subRows : g.subRows.filter(r=> normAr(r.acc.code).includes(q) || normAr(r.acc.name).includes(q));
+    if(q && !mainMatch && subRows.length===0) return; // لا تطابق فى هذه المجموعة
+    anyRow = true;
+    shownDebit += g.mainDebit; shownCredit += g.mainCredit; shownBalance += g.mainBalance;
+
+    const subRowsHtml = subRows.map(r=>`<tr>
+        <td><span class="tree-code" style="padding-inline-start:18px">${r.acc.code}</span></td>
+        <td class="acc-name">${r.acc.name}</td>
+        <td><span class="pill ${TYPE_PILL[r.acc.type]}">${TYPE_LABEL[r.acc.type]}</span></td>
+        <td class="num amt-num">${r.debit? fmt(r.debit): '—'}</td>
+        <td class="num amt-num">${r.credit? fmt(r.credit): '—'}</td>
+        <td class="num">${balanceCellHtml(r.balance)}</td>
+      </tr>`).join('');
+
+    tbody.innerHTML += `<tr style="background:var(--surface-alt)">
+      <td><span class="tree-code"><b>${g.main.code}</b></span></td>
+      <td class="acc-name">${g.main.name}</td>
+      <td><span class="pill pill-group">رئيسي</span></td>
+      <td class="num amt-num">${g.mainDebit? fmt(g.mainDebit): '—'}</td>
+      <td class="num amt-num">${g.mainCredit? fmt(g.mainCredit): '—'}</td>
+      <td class="num">${balanceCellHtml(g.mainBalance)}</td>
+    </tr>` + subRowsHtml;
+  });
+
+  if(td===0 && tc===0){
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">لا توجد حركة مسجلة بعد</div></td></tr>`;
+  } else if(!anyRow){
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">لا توجد نتائج مطابقة لبحثك</div></td></tr>`;
+  }
+
+  document.getElementById('trialTotalDebit').textContent = fmt(td);
+  document.getElementById('trialTotalCredit').textContent = fmt(tc);
+  document.getElementById('trialTotalBalance').textContent = fmt(td-tc);
+  const diffOk = Math.abs(td-tc) < 0.005;
+  const kpis = document.getElementById('trialKpis');
+  if(kpis){
+    kpis.innerHTML = `
+      <div class="kpi kpi-debit"><div class="label">${REPORT_SUM_ICONS.debit}إجمالي مدين</div><div class="value num">${fmt(td)}</div></div>
+      <div class="kpi kpi-credit"><div class="label">${REPORT_SUM_ICONS.credit}إجمالي دائن</div><div class="value num">${fmt(tc)}</div></div>
+      <div class="kpi ${diffOk?'kpi-ok':'kpi-bad'}"><div class="label">${REPORT_SUM_ICONS.balance}الفرق</div><div class="value num">${fmt(td-tc)}</div></div>
+    `;
+  }
+  const banner = document.getElementById('trialStatus');
+  const balanced = Math.abs(td-tc) < 0.005;
+  banner.className = 'status-banner ' + (balanced? 'status-ok':'status-bad');
+  banner.innerHTML = balanced
+    ? '✓ الميزان متزن — إجمالي المدين يساوي إجمالي الدائن'
+    : '⚠ الميزان غير متزن — يوجد فرق قدره ' + fmt(Math.abs(td-tc));
+}
+function exportTrialPdf(){
+  const {groups} = getTrialBalanceData();
+  const q = normAr((document.getElementById('trialSearchInput')||{}).value||'');
+  let bodyRows = '', shownDebit=0, shownCredit=0, anyRow=false;
+  groups.forEach(g=>{
+    const mainMatch = !q || normAr(g.main.code).includes(q) || normAr(g.main.name).includes(q);
+    const subRows = mainMatch ? g.subRows : g.subRows.filter(r=> normAr(r.acc.code).includes(q) || normAr(r.acc.name).includes(q));
+    if(q && !mainMatch && subRows.length===0) return;
+    anyRow = true;
+    shownDebit += g.mainDebit; shownCredit += g.mainCredit;
+    const balLabel = (bal)=> Math.abs(bal)<0.005 ? '' : (bal>0? fmt(bal)+' مدين' : fmt(Math.abs(bal))+' دائن');
+    bodyRows += `<tr style="font-weight:700; background:#F1F3F2;">
+      <td>${escHtml(g.main.code)}</td><td>${escHtml(g.main.name)}</td><td>${escHtml(TYPE_LABEL[g.main.type]||'رئيسي')}</td>
+      <td class="n">${g.mainDebit? fmt(g.mainDebit):''}</td><td class="n">${g.mainCredit? fmt(g.mainCredit):''}</td>
+      <td class="n">${escHtml(balLabel(g.mainBalance))}</td></tr>`;
+    subRows.forEach(r=>{
+      bodyRows += `<tr>
+        <td>${escHtml(r.acc.code)}</td><td>${escHtml(r.acc.name)}</td><td>${escHtml(TYPE_LABEL[r.acc.type]||'')}</td>
+        <td class="n">${r.debit? fmt(r.debit):''}</td><td class="n">${r.credit? fmt(r.credit):''}</td>
+        <td class="n">${escHtml(balLabel(r.balance))}</td></tr>`;
+    });
+  });
+  if(!anyRow){ alert('لا توجد نتائج مطابقة لبحثك لطباعتها'); return; }
+  const tableHtml = `<table>
+    <thead><tr><th>الكود</th><th>اسم الحساب</th><th>النوع</th><th class="n">مدين</th><th class="n">دائن</th><th class="n">الرصيد</th></tr></thead>
+    <tbody>${bodyRows}</tbody>
+    <tfoot><tr><td colspan="3">الإجمالي</td><td class="n">${fmt(shownDebit)}</td><td class="n">${fmt(shownCredit)}</td><td class="n">${fmt(shownDebit-shownCredit)}</td></tr></tfoot>
+  </table>`;
+  const balanced = Math.abs(shownDebit-shownCredit) < 0.005;
+  const sumCardsHtml = reportSumCardHtml('debit','إجمالي مدين', fmt(shownDebit))
+    + reportSumCardHtml('credit','إجمالي دائن', fmt(shownCredit))
+    + reportSumCardHtml('balance', balanced? 'الميزان متزن' : 'فرق فى الميزان', balanced? '✓' : fmt(Math.abs(shownDebit-shownCredit)));
+  const html = buildReportDocument({
+    title: 'ميزان المراجعة',
+    subtitleHtml: q ? `نتائج بحث عن: <b>${escHtml(q)}</b>` : '',
+    metaHtml: `تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}`,
+    sumCardsHtml,
+    tableHtml,
+    docTitle: 'ميزان-المراجعة'
+  });
+  openPrintWindow(html, 'trialPrint');
+}
+
+/* ============================================================
+   INCOME STATEMENT
+   ============================================================ */
+function renderIncomeStatement(){
+  const revTbody = document.getElementById('revTbody');
+  const expTbody = document.getElementById('expTbody');
+  revTbody.innerHTML=''; expTbody.innerHTML='';
+  let revTotal=0, expTotal=0;
+
+  postableAccounts().filter(a=>a.type==='revenue').forEach(a=>{
+    const v = accountBalance(a); revTotal+=v;
+    revTbody.innerHTML += `<tr><td class="acc-name">${a.name}</td><td class="num amt-num">${fmt(v)}</td></tr>`;
+  });
+  postableAccounts().filter(a=>a.type==='expense').forEach(a=>{
+    const v = accountBalance(a); expTotal+=v;
+    expTbody.innerHTML += `<tr><td class="acc-name">${a.name}</td><td class="num amt-num">${fmt(v)}</td></tr>`;
+  });
+  if(revTotal===0) revTbody.innerHTML = `<tr><td colspan="2"><div class="empty-state">لا توجد إيرادات مسجلة</div></td></tr>`;
+  if(expTotal===0) expTbody.innerHTML = `<tr><td colspan="2"><div class="empty-state">لا توجد مصروفات مسجلة</div></td></tr>`;
+
+  document.getElementById('revTotal').textContent = fmt(revTotal);
+  document.getElementById('expTotal').textContent = fmt(expTotal);
+
+  const net = revTotal - expTotal;
+  const box = document.getElementById('netIncomeBox');
+  const label = document.getElementById('netIncomeLabel');
+  const value = document.getElementById('netIncomeValue');
+  const icon = net>=0 ? REPORT_SUM_ICONS.balance : REPORT_SUM_ICONS.credit;
+  label.innerHTML = icon + (net>=0 ? 'صافي الربح عن الفترة' : 'صافي الخسارة عن الفترة');
+  value.textContent = fmt(Math.abs(net));
+  value.className = 'value num';
+  box.className = 'kpi ' + (net>=0? 'kpi-ok':'kpi-bad') + '';
+  box.style.cssText = 'display:flex; align-items:center; justify-content:space-between;';
+}
+
+/* ============================================================
+   BALANCE SHEET
+   ============================================================ */
+function renderBalanceSheet(){
+  const assetsTbody = document.getElementById('assetsTbody');
+  const liabTbody = document.getElementById('liabTbody');
+  const eqTbody = document.getElementById('eqTbody');
+  assetsTbody.innerHTML=''; liabTbody.innerHTML=''; eqTbody.innerHTML='';
+
+  let assetsTotal=0, liabTotal=0, eqTotal=0;
+  postableAccounts().filter(a=>a.type==='asset').forEach(a=>{
+    const v = accountBalance(a); assetsTotal+=v;
+    assetsTbody.innerHTML += `<tr><td class="acc-name">${a.name}</td><td class="num amt-num">${fmt(v)}</td></tr>`;
+  });
+  postableAccounts().filter(a=>a.type==='liability').forEach(a=>{
+    const v = accountBalance(a); liabTotal+=v;
+    liabTbody.innerHTML += `<tr><td class="acc-name">${a.name}</td><td class="num amt-num">${fmt(v)}</td></tr>`;
+  });
+  postableAccounts().filter(a=>a.type==='equity').forEach(a=>{
+    const v = accountBalance(a); eqTotal+=v;
+    eqTbody.innerHTML += `<tr><td class="acc-name">${a.name}</td><td class="num amt-num">${fmt(v)}</td></tr>`;
+  });
+
+  const {net} = computeNetIncome();
+  eqTbody.innerHTML += `<tr><td class="acc-name">${net>=0?'صافي ربح الفترة الحالية':'صافي خسارة الفترة الحالية'}</td><td class="num amt-num">${fmt(net)}</td></tr>`;
+  eqTotal += net;
+
+  if(assetsTotal===0) assetsTbody.innerHTML = `<tr><td colspan="2"><div class="empty-state">لا توجد أصول مسجلة</div></td></tr>`;
+  if(liabTotal===0) liabTbody.innerHTML = `<tr><td colspan="2"><div class="empty-state">لا توجد خصوم مسجلة</div></td></tr>`;
+
+  document.getElementById('assetsTotal').textContent = fmt(assetsTotal);
+  document.getElementById('liabTotal').textContent = fmt(liabTotal);
+  document.getElementById('eqTotal').textContent = fmt(eqTotal);
+
+  const banner = document.getElementById('balanceStatus');
+  const rightSide = liabTotal + eqTotal;
+  const balanced = Math.abs(assetsTotal - rightSide) < 0.005;
+  banner.className = 'status-banner ' + (balanced? 'status-ok':'status-bad');
+  banner.innerHTML = balanced
+    ? `✓ الميزانية متزنة — الأصول (${fmt(assetsTotal)}) = الخصوم + حقوق الملكية (${fmt(rightSide)})`
+    : `⚠ الميزانية غير متزنة — الأصول (${fmt(assetsTotal)}) لا تساوي الخصوم وحقوق الملكية (${fmt(rightSide)})`;
+}
+
+/* ---------- تصدير قائمة الدخل PDF ---------- */
+function exportIncomePdf(){
+  const revRows = postableAccounts().filter(a=>a.type==='revenue').map(a=>({acc:a, v:accountBalance(a)}));
+  const expRows = postableAccounts().filter(a=>a.type==='expense').map(a=>({acc:a, v:accountBalance(a)}));
+  const revTotal = revRows.reduce((s,r)=>s+r.v,0);
+  const expTotal = expRows.reduce((s,r)=>s+r.v,0);
+  const net = revTotal - expTotal;
+
+  const rowsHtml = (rows)=> rows.length
+    ? rows.map(r=>`<tr><td>${escHtml(r.acc.name)}</td><td class="n">${fmt(r.v)}</td></tr>`).join('')
+    : `<tr><td colspan="2" style="text-align:center; color:#8a938f;">لا توجد بيانات</td></tr>`;
+
+  const tableHtml = `
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+    <div>
+      <table>
+        <thead><tr><th colspan="2">الإيرادات</th></tr></thead>
+        <tbody>${rowsHtml(revRows)}</tbody>
+        <tfoot><tr><td>إجمالي الإيرادات</td><td class="n">${fmt(revTotal)}</td></tr></tfoot>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th colspan="2">المصروفات</th></tr></thead>
+        <tbody>${rowsHtml(expRows)}</tbody>
+        <tfoot><tr><td>إجمالي المصروفات</td><td class="n">${fmt(expTotal)}</td></tr></tfoot>
+      </table>
+    </div>
+  </div>`;
+
+  const sumCardsHtml = reportSumCardHtml('debit','إجمالي الإيرادات', fmt(revTotal))
+    + reportSumCardHtml('credit','إجمالي المصروفات', fmt(expTotal))
+    + reportSumCardHtml('balance', net>=0? 'صافي الربح':'صافي الخسارة', fmt(Math.abs(net)));
+
+  const html = buildReportDocument({
+    title: 'قائمة الدخل',
+    subtitleHtml: 'الإيرادات والمصروفات وصافي نتيجة النشاط عن الفترة',
+    metaHtml: `تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}`,
+    sumCardsHtml,
+    tableHtml,
+    docTitle: 'قائمة-الدخل'
+  });
+  openPrintWindow(html, 'incomePrint');
+}
+
+/* ---------- تصدير الميزانية العمومية PDF ---------- */
+function exportBalancePdf(){
+  const assetsRows = postableAccounts().filter(a=>a.type==='asset').map(a=>({name:a.name, v:accountBalance(a)}));
+  const liabRows = postableAccounts().filter(a=>a.type==='liability').map(a=>({name:a.name, v:accountBalance(a)}));
+  const eqRows = postableAccounts().filter(a=>a.type==='equity').map(a=>({name:a.name, v:accountBalance(a)}));
+
+  const assetsTotal = assetsRows.reduce((s,r)=>s+r.v,0);
+  const liabTotal = liabRows.reduce((s,r)=>s+r.v,0);
+  const {net} = computeNetIncome();
+  eqRows.push({name: net>=0?'صافي ربح الفترة الحالية':'صافي خسارة الفترة الحالية', v: net});
+  const eqTotal = eqRows.reduce((s,r)=>s+r.v,0);
+  const rightSide = liabTotal + eqTotal;
+  const balanced = Math.abs(assetsTotal - rightSide) < 0.005;
+
+  const rowsHtml = (rows)=> rows.length
+    ? rows.map(r=>`<tr><td>${escHtml(r.name)}</td><td class="n">${fmt(r.v)}</td></tr>`).join('')
+    : `<tr><td colspan="2" style="text-align:center; color:#8a938f;">لا توجد بيانات</td></tr>`;
+
+  const tableHtml = `
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+    <div>
+      <table>
+        <thead><tr><th colspan="2">الأصول</th></tr></thead>
+        <tbody>${rowsHtml(assetsRows)}</tbody>
+        <tfoot><tr><td>إجمالي الأصول</td><td class="n">${fmt(assetsTotal)}</td></tr></tfoot>
+      </table>
+    </div>
+    <div>
+      <table style="margin-bottom:14px;">
+        <thead><tr><th colspan="2">الخصوم</th></tr></thead>
+        <tbody>${rowsHtml(liabRows)}</tbody>
+        <tfoot><tr><td>إجمالي الخصوم</td><td class="n">${fmt(liabTotal)}</td></tr></tfoot>
+      </table>
+      <table>
+        <thead><tr><th colspan="2">حقوق الملكية</th></tr></thead>
+        <tbody>${rowsHtml(eqRows)}</tbody>
+        <tfoot><tr><td>إجمالي حقوق الملكية</td><td class="n">${fmt(eqTotal)}</td></tr></tfoot>
+      </table>
+    </div>
+  </div>`;
+
+  const sumCardsHtml = reportSumCardHtml('debit','إجمالي الأصول', fmt(assetsTotal))
+    + reportSumCardHtml('credit','الخصوم + حقوق الملكية', fmt(rightSide))
+    + reportSumCardHtml('balance', balanced? 'الميزانية متزنة' : 'فرق فى الميزانية', balanced? '✓' : fmt(Math.abs(assetsTotal-rightSide)));
+
+  const html = buildReportDocument({
+    title: 'الميزانية العمومية',
+    subtitleHtml: 'المركز المالي للشركة في لحظة معينة — الأصول مقابل الخصوم وحقوق الملكية',
+    metaHtml: `تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}`,
+    sumCardsHtml,
+    tableHtml,
+    docTitle: 'الميزانية-العمومية'
+  });
+  openPrintWindow(html, 'balancePrint');
+}
+
+/* ============================================================
+   MASTER RENDER
+   ============================================================ */
+/* ============================================================
+   AUTO-SAVE (localStorage) — البيانات بتتحفظ تلقائي في المتصفح
+   ============================================================ */
+const STORE_KEY = 'daftara_data_v1'; // نسخة احتياطية محلية فقط (fallback offline)
+function fullStateSnapshot(){
+  return {accounts, entries, entrySeq, subAccounts, costCenters, companyInfo};
+}
+// نسخة الإعدادات والحسابات فقط (من غير القيود) — هي اللي بتتبعت لمستند main
+function metaSnapshot(){
+  return {accounts, entrySeq, subAccounts, costCenters, companyInfo};
+}
+function applyStateSnapshot(d){
+  if(!d || typeof d !== 'object') return;
+  if(Array.isArray(d.accounts)) accounts = d.accounts;
+  if(Array.isArray(d.entries)) entries = d.entries;
+  if(Number.isFinite(d.entrySeq)) entrySeq = d.entrySeq;
+  if(Array.isArray(d.subAccounts)) subAccounts = d.subAccounts;
+  if(Array.isArray(d.costCenters)) costCenters = d.costCenters;
+  if(d.companyInfo && typeof d.companyInfo==='object') companyInfo = {name: d.companyInfo.name || '', logo: d.companyInfo.logo || null};
+}
+function saveState(){
+  // حفظ محلي فوري كنسخة احتياطية لو النت اتقطع (بيشمل القيود كمان كـ fallback بس مش ده مصدر الحقيقة)
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(fullStateSnapshot())); }catch(e){}
+  if(_applyingRemoteUpdate) return; // مننضربش الداتا اللي جاية من فايرستور برجعتها تاني
+  // نأخر إرسال الإعدادات/الحسابات شوية (debounce) عشان مانبعتش لفايرستور مع كل حركة صغيرة
+  // (القيود نفسها بتتبعت فورًا من مكانها في saveEntry/deleteEntry.. مش من هنا)
+  clearTimeout(_saveDebounceTimer);
+  _saveDebounceTimer = setTimeout(()=>{
+    FIRESTORE_META.set(metaSnapshot()).catch(e=>{
+      console.warn('تعذر الحفظ على فايرستور', e);
+      showToast('تعذر الحفظ أونلاين — تأكدي من الاتصال بالإنترنت', true);
+    });
+  }, 600);
+}
+function loadState(){
+  // تحميل احتياطي من التخزين المحلي (هيتغطى فورًا لما يوصل رد فايرستور)
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw) applyStateSnapshot(JSON.parse(raw));
+  }catch(e){ console.warn('تعذر تحميل النسخة المحلية', e); }
+}
+function startFirestoreSync(){
+  FIRESTORE_META.onSnapshot(snap=>{
+    if(!snap.exists){
+      // أول مرة نفتح فيها السيستم على المشروع ده — نسجل الحالة الابتدائية
+      FIRESTORE_META.set(metaSnapshot()).catch(e=>console.warn('تعذر إنشاء المستند', e));
+      return;
+    }
+    _applyingRemoteUpdate = true;
+    applyStateSnapshot(snap.data());
+    renderAll();
+    _applyingRemoteUpdate = false;
+  }, err=>{
+    console.warn('تعذر الاتصال بفايرستور', err);
+    showToast('تعذر الاتصال بقاعدة البيانات أونلاين — شغالة بالنسخة المحلية دلوقتي', true);
+  });
+  FIRESTORE_ENTRIES.onSnapshot(snap=>{
+    _applyingRemoteUpdate = true;
+    if(!_entriesFirstLoadDone){
+      entries = snap.docs.map(d=>d.data());
+      _entriesFirstLoadDone = true;
+    } else {
+      snap.docChanges().forEach(change=>{
+        const idx = entries.findIndex(e=>String(e.id)===change.doc.id);
+        if(change.type==='removed'){ if(idx>-1) entries.splice(idx,1); }
+        else { const data = change.doc.data(); if(idx>-1) entries[idx]=data; else entries.push(data); }
+      });
+    }
+    renderAll();
+    _applyingRemoteUpdate = false;
+  }, err=>{
+    console.warn('تعذر تحميل القيود من فايرستور', err);
+  });
+}
+
+/* ============================================================
+   SETTINGS — بيانات الشركة / النسخ الاحتياطي / مسح البيانات
+   ============================================================ */
+function applyCompanyBranding(){
+  const nameChip = document.getElementById('companyNameChip');
+  if(nameChip) nameChip.textContent = companyInfo.name || 'اسم الشركة';
+  const brandName = document.getElementById('brandNameText');
+  if(brandName) brandName.textContent = companyInfo.name || 'دفترة';
+  document.title = (companyInfo.name || 'دفترة') + ' | نظام محاسبي متكامل';
+  const logoChip = document.getElementById('companyLogoChip');
+  if(logoChip){
+    if(companyInfo.logo){ logoChip.src = companyInfo.logo; logoChip.style.display = ''; }
+    else { logoChip.removeAttribute('src'); logoChip.style.display = 'none'; }
+  }
+}
+function renderSettingsPage(){
+  const nameInp = document.getElementById('setCompanyName');
+  if(nameInp && document.activeElement !== nameInp) nameInp.value = companyInfo.name || '';
+  const preview = document.getElementById('setLogoPreview');
+  const removeBtn = document.getElementById('removeLogoBtn');
+  if(preview && removeBtn){
+    if(companyInfo.logo){ preview.src = companyInfo.logo; preview.style.display = ''; removeBtn.style.display = ''; }
+    else { preview.style.display = 'none'; removeBtn.style.display = 'none'; }
+  }
+}
+function handleLogoUpload(ev){
+  const file = ev.target.files && ev.target.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ showToast('اختاري ملف صورة للوجو', true); ev.target.value=''; return; }
+  const fr = new FileReader();
+  fr.onload = ()=>{
+    companyInfo.logo = fr.result;
+    renderSettingsPage();
+    showToast('تم تحميل الشعار — اضغطي "حفظ بيانات الشركة" لتثبيته');
+  };
+  fr.onerror = ()=> showToast('تعذر قراءة ملف الصورة', true);
+  fr.readAsDataURL(file);
+}
+function removeLogo(){
+  companyInfo.logo = null;
+  document.getElementById('setLogoInput').value = '';
+  renderSettingsPage();
+}
+function saveCompanyInfo(){
+  companyInfo.name = (document.getElementById('setCompanyName').value || '').trim();
+  saveState();
+  applyCompanyBranding();
+  showToast('تم حفظ بيانات الشركة');
+}
+function backupAllData(){
+  const data = fullStateSnapshot();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const stamp = new Date().toISOString().slice(0,10);
+  downloadBlob(blob, 'نسخة-احتياطية-دفترة-' + stamp + '.json');
+}
+function handleRestoreFile(ev){
+  const file = ev.target.files && ev.target.files[0];
+  if(!file) return;
+  const fr = new FileReader();
+  fr.onload = ()=>{
+    try{
+      const d = JSON.parse(fr.result);
+      const looksValid = d && (Array.isArray(d.accounts) || Array.isArray(d.entries) || Array.isArray(d.subAccounts) || Array.isArray(d.costCenters));
+      if(!looksValid){ showToast('الملف ده مش نسخة احتياطية صالحة لدفترة', true); ev.target.value=''; return; }
+      if(!confirm('استعادة النسخة الاحتياطية هتستبدل كل البيانات الحالية في النظام. متأكدة تكملي؟')) { ev.target.value=''; return; }
+      accounts = Array.isArray(d.accounts) ? d.accounts : [];
+      entries = Array.isArray(d.entries) ? d.entries : [];
+      entrySeq = Number.isFinite(d.entrySeq) ? d.entrySeq : 1;
+      subAccounts = Array.isArray(d.subAccounts) ? d.subAccounts : [];
+      costCenters = Array.isArray(d.costCenters) ? d.costCenters : [];
+      companyInfo = (d.companyInfo && typeof d.companyInfo==='object') ? {name: d.companyInfo.name||'', logo: d.companyInfo.logo||null} : {name:'', logo:null};
+      saveState();
+      applyCompanyBranding();
+      renderAll();
+      clearAllEntriesRemote().then(()=>{ if(entries.length) pushEntriesBatchRemote(entries); });
+      showToast('تم استعادة النسخة الاحتياطية بنجاح');
+    }catch(err){ showToast('تعذر قراءة ملف النسخة الاحتياطية: ' + err.message, true); }
+    ev.target.value = '';
+  };
+  fr.onerror = ()=>{ showToast('تعذر قراءة الملف', true); ev.target.value=''; };
+  fr.readAsText(file);
+}
+function wipeAllData(){
+  if(!confirm('هيتم مسح كل بيانات النظام نهائيًا (الحسابات، القيود، الفروع، مراكز التكلفة) ولا يمكن التراجع عن ده. متأكدة؟')) return;
+  if(!confirm('تأكيد أخير: هل تريدين مسح كل البيانات فعلاً؟')) return;
+  try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+  FIRESTORE_META.delete().catch(e=>console.warn('تعذر مسح البيانات أونلاين', e));
+  clearAllEntriesRemote().finally(()=> location.reload());
+}
+
+function renderAll(){
+  saveState();
+  applyCompanyBranding();
+  renderAccountsTree();
+  renderSubAccounts();
+  renderCostCenters();
+  populateJournalAccountFilter();
+  renderJournal();
+  populateLedgerSelect();
+  renderLedger();
+  renderTrialBalance();
+  renderIncomeStatement();
+  renderBalanceSheet();
+  renderSettingsPage();
+}
+
+document.getElementById('todayChip').textContent = new Date().toLocaleDateString('ar-EG', {year:'numeric', month:'long', day:'numeric'});
+
+loadState();
+renderAll();
+startFirestoreSync();
+</script>
+</body>
+</html>
