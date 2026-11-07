@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>دفترة | نظام محاسبي متكامل</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0E5C56">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -895,6 +898,11 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+// ===== العمل أوفلاين: كل الداتا بتتخزن في المتصفح (IndexedDB) وبتتزامن لما النت يرجع =====
+db.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED });
+db.enablePersistence({ synchronizeTabs: true }).catch(err=>{
+  console.warn('الوضع الأوفلاين مش متاح في المتصفح ده', err && err.code);
+});
 const FIRESTORE_META = db.collection('daftara_system').doc('main');
 const FIRESTORE_ENTRIES = FIRESTORE_META.collection('entries');
 let _applyingRemoteUpdate = false; // عشان نمنع لوب لا نهائي لما نستقبل تحديث من فايرستور
@@ -902,29 +910,33 @@ let _saveDebounceTimer = null;
 let _entriesFirstLoadDone = false;
 
 function pushEntryRemote(entry){
+  entry.updatedAt = Date.now();
   FIRESTORE_ENTRIES.doc(String(entry.id)).set(entry).catch(e=>{
     console.warn('تعذر حفظ القيد أونلاين', e);
     showToast('تعذر حفظ القيد أونلاين — تأكدي من الاتصال بالإنترنت', true);
   });
 }
+// الحذف بقى "علامة حذف" (بدل المسح الفعلي) عشان باقي الأجهزة تعرف إن القيد اتحذف من غير ما تقرا كل القيود
 function removeEntryRemote(id){
-  FIRESTORE_ENTRIES.doc(String(id)).delete().catch(e=>console.warn('تعذر حذف القيد أونلاين', e));
+  FIRESTORE_ENTRIES.doc(String(id)).set({id:id, deleted:true, updatedAt:Date.now()}, {merge:true}).catch(e=>console.warn('تعذر حذف القيد أونلاين', e));
 }
 async function pushEntriesBatchRemote(list){
+  const now = Date.now();
   for(let i=0;i<list.length;i+=450){
     const chunk = list.slice(i,i+450);
     const batch = db.batch();
-    chunk.forEach(e=> batch.set(FIRESTORE_ENTRIES.doc(String(e.id)), e));
+    chunk.forEach(e=>{ e.updatedAt = now; batch.set(FIRESTORE_ENTRIES.doc(String(e.id)), e); });
     try{ await batch.commit(); }catch(e){ console.warn('تعذر رفع دفعة القيود أونلاين', e); showToast('تعذر رفع بعض القيود أونلاين', true); }
   }
 }
 async function clearAllEntriesRemote(){
   try{
     const snap = await FIRESTORE_ENTRIES.get();
-    const docs = snap.docs;
+    const docs = snap.docs.filter(d=>!d.data().deleted);
+    const now = Date.now();
     for(let i=0;i<docs.length;i+=450){
       const batch = db.batch();
-      docs.slice(i,i+450).forEach(d=>batch.delete(d.ref));
+      docs.slice(i,i+450).forEach(d=>batch.set(d.ref, {id:d.data().id, deleted:true, updatedAt:now}));
       await batch.commit();
     }
   }catch(e){ console.warn('تعذر حذف القيود أونلاين', e); }
@@ -2539,7 +2551,7 @@ function applyStateSnapshot(d){
 }
 function saveState(){
   // حفظ محلي فوري كنسخة احتياطية لو النت اتقطع (بيشمل القيود كمان كـ fallback بس مش ده مصدر الحقيقة)
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(fullStateSnapshot())); }catch(e){}
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(metaSnapshot())); }catch(e){}
   if(_applyingRemoteUpdate) return; // مننضربش الداتا اللي جاية من فايرستور برجعتها تاني
   // نأخر إرسال الإعدادات/الحسابات شوية (debounce) عشان مانبعتش لفايرستور مع كل حركة صغيرة
   // (القيود نفسها بتتبعت فورًا من مكانها في saveEntry/deleteEntry.. مش من هنا)
@@ -2557,7 +2569,7 @@ function loadState(){
   // تحميل احتياطي من التخزين المحلي (هيتغطى فورًا لما يوصل رد فايرستور)
   try{
     const raw = localStorage.getItem(STORE_KEY);
-    if(raw) applyStateSnapshot(JSON.parse(raw));
+    if(raw){ applyStateSnapshot(JSON.parse(raw)); entries = []; } // القيود بتيجي من كاش فايرستور مش من هنا
   }catch(e){ console.warn('تعذر تحميل النسخة المحلية', e); }
 }
 function startFirestoreSync(){
@@ -2577,22 +2589,70 @@ function startFirestoreSync(){
     console.warn('تعذر الاتصال بفايرستور', err);
     showToast('تعذر الاتصال بقاعدة البيانات أونلاين — شغالة بالنسخة المحلية دلوقتي', true);
   });
-  FIRESTORE_ENTRIES.onSnapshot(snap=>{
-    _applyingRemoteUpdate = true;
-    if(!_entriesFirstLoadDone){
-      entries = snap.docs.map(d=>d.data());
-      _entriesFirstLoadDone = true;
-    } else {
-      snap.docChanges().forEach(change=>{
-        const idx = entries.findIndex(e=>String(e.id)===change.doc.id);
-        if(change.type==='removed'){ if(idx>-1) entries.splice(idx,1); }
-        else { const data = change.doc.data(); if(idx>-1) entries[idx]=data; else entries.push(data); }
-      });
+  startEntriesIncrementalSync();
+}
+
+/* ============================================================
+   مزامنة تدريجية للقيود: بنحمّل من كاش الجهاز (مجانًا) ونسأل السيرفر
+   عن القيود اللي اتغيرت من آخر مزامنة بس — بدل قراءة كل القيود كل مرة
+   ============================================================ */
+const LASTSYNC_KEY = 'daftara_entries_lastsync_v1';
+const SYNC_MARGIN_MS = 10*60*1000; // هامش أمان لفروق ساعة الأجهزة
+function _upsertEntry(data){
+  const idx = entries.findIndex(e=>String(e.id)===String(data.id));
+  if(data.deleted){ if(idx>-1) entries.splice(idx,1); return; }
+  if(idx>-1) entries[idx]=data; else entries.push(data);
+}
+function _saveLastSync(ms){ try{ localStorage.setItem(LASTSYNC_KEY, String(ms)); }catch(e){} }
+async function startEntriesIncrementalSync(){
+  let lastSync = Number(localStorage.getItem(LASTSYNC_KEY)) || 0;
+  let needFull = !lastSync;
+  const startedAt = Date.now();
+  try{
+    // 1) الكاش المحلي (من غير تكلفة قراءة)
+    let cacheSnap = null;
+    try{ cacheSnap = await FIRESTORE_ENTRIES.get({source:'cache'}); }catch(e){}
+    if(cacheSnap && !cacheSnap.empty){
+      _applyingRemoteUpdate = true;
+      entries = cacheSnap.docs.map(d=>d.data()).filter(d=>!d.deleted);
+      _applyingRemoteUpdate = false;
+      renderAll();
+    } else { needFull = true; }
+
+    // 2) أول مرة على الجهاز ده: تحميل كامل مرة واحدة بس
+    if(needFull){
+      try{
+        const full = await FIRESTORE_ENTRIES.get({source:'server'});
+        _applyingRemoteUpdate = true;
+        entries = full.docs.map(d=>d.data()).filter(d=>!d.deleted);
+        _applyingRemoteUpdate = false;
+        lastSync = startedAt;
+        _saveLastSync(lastSync);
+        renderAll();
+      }catch(e){
+        // مفيش نت وأول مرة: هنكمل بالكاش لو موجود
+        console.warn('تعذر التحميل الكامل', e);
+        if(!lastSync) lastSync = 0;
+      }
     }
-    renderAll();
+  }catch(e){ console.warn('تعذر تحميل القيود', e); }
+
+  // 3) نسمع للتغييرات الجديدة بس
+  const since = Math.max(0, lastSync - SYNC_MARGIN_MS);
+  FIRESTORE_ENTRIES.where('updatedAt','>', since).onSnapshot(snap=>{
+    _applyingRemoteUpdate = true;
+    let maxTs = 0;
+    snap.docChanges().forEach(ch=>{
+      if(ch.type==='removed') return;
+      const d = ch.doc.data();
+      _upsertEntry(d);
+      if(d.updatedAt > maxTs) maxTs = d.updatedAt;
+    });
     _applyingRemoteUpdate = false;
+    if(snap.docChanges().length) renderAll();
+    if(!snap.metadata.fromCache){ _saveLastSync(Math.max(lastSync, maxTs, startedAt)); }
   }, err=>{
-    console.warn('تعذر تحميل القيود من فايرستور', err);
+    console.warn('تعذر تحميل تحديثات القيود', err);
   });
 }
 
@@ -2707,6 +2767,9 @@ document.getElementById('todayChip').textContent = new Date().toLocaleDateString
 loadState();
 renderAll();
 startFirestoreSync();
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW',e)));
+}
 </script>
 </body>
 </html>
