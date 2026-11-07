@@ -338,6 +338,7 @@
         </div>
       </div>
       <div class="date-chip" id="todayChip">—</div>
+      <div class="date-chip" id="syncChip" title="حالة المزامنة">⏳ جاري الاتصال…</div>
     </div>
   </div>
 
@@ -905,6 +906,21 @@ db.enablePersistence({ synchronizeTabs: true }).catch(err=>{
 });
 const FIRESTORE_META = db.collection('daftara_system').doc('main');
 const FIRESTORE_ENTRIES = FIRESTORE_META.collection('entries');
+// ===== مؤشر حالة المزامنة (فوق في الشريط) =====
+function setSync(state, detail){
+  const el = document.getElementById('syncChip'); if(!el) return;
+  const map = {
+    ok:   ['✅ متزامن', '#0E5C56', '#E3EFEC'],
+    cache:['📴 من نسخة الجهاز', '#8a6d1f', '#F6EEDC'],
+    off:  ['📴 أوفلاين', '#8a6d1f', '#F6EEDC'],
+    err:  ['❌ خطأ مزامنة' + (detail ? ' (' + detail + ')' : ''), '#A34632', '#F6E9E5']
+  };
+  const m = map[state] || map.cache;
+  el.textContent = m[0]; el.style.color = m[1]; el.style.background = m[2];
+  if(detail) el.title = String(detail);
+}
+window.addEventListener('offline', ()=>setSync('off'));
+window.addEventListener('online',  ()=>setSync('cache'));
 let _applyingRemoteUpdate = false; // عشان نمنع لوب لا نهائي لما نستقبل تحديث من فايرستور
 let _saveDebounceTimer = null;
 let _entriesFirstLoadDone = false;
@@ -913,6 +929,7 @@ function pushEntryRemote(entry){
   entry.updatedAt = Date.now();
   FIRESTORE_ENTRIES.doc(String(entry.id)).set(entry).catch(e=>{
     console.warn('تعذر حفظ القيد أونلاين', e);
+    setSync('err', e && e.code);
     showToast('تعذر حفظ القيد أونلاين — تأكدي من الاتصال بالإنترنت', true);
   });
 }
@@ -2580,6 +2597,7 @@ function startFirestoreSync(){
       return;
     }
     // لو فيه تعديل محلي لسه ما اتبعتش (زي حذف حساب) منسيبش نسخة قديمة جاية من السيرفر ترجّعه
+    setSync(snap.metadata.fromCache ? 'cache' : 'ok');
     if(window._metaSavePending || snap.metadata.hasPendingWrites) return;
     _applyingRemoteUpdate = true;
     applyStateSnapshot(snap.data());
@@ -2587,6 +2605,7 @@ function startFirestoreSync(){
     _applyingRemoteUpdate = false;
   }, err=>{
     console.warn('تعذر الاتصال بفايرستور', err);
+    setSync('err', err && err.code);
     showToast('تعذر الاتصال بقاعدة البيانات أونلاين — شغالة بالنسخة المحلية دلوقتي', true);
   });
   startEntriesIncrementalSync();
@@ -2650,9 +2669,11 @@ async function startEntriesIncrementalSync(){
     });
     _applyingRemoteUpdate = false;
     if(snap.docChanges().length) renderAll();
+    setSync(snap.metadata.fromCache ? 'cache' : 'ok');
     if(!snap.metadata.fromCache){ _saveLastSync(Math.max(lastSync, maxTs, startedAt)); }
   }, err=>{
     console.warn('تعذر تحميل تحديثات القيود', err);
+    setSync('err', err && err.code);
   });
 }
 
