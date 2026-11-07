@@ -2544,8 +2544,10 @@ function saveState(){
   // نأخر إرسال الإعدادات/الحسابات شوية (debounce) عشان مانبعتش لفايرستور مع كل حركة صغيرة
   // (القيود نفسها بتتبعت فورًا من مكانها في saveEntry/deleteEntry.. مش من هنا)
   clearTimeout(_saveDebounceTimer);
+  window._metaSavePending = true;
   _saveDebounceTimer = setTimeout(()=>{
-    FIRESTORE_META.set(metaSnapshot()).catch(e=>{
+    FIRESTORE_META.set(metaSnapshot()).then(()=>{ window._metaSavePending = false; }).catch(e=>{
+      window._metaSavePending = false;
       console.warn('تعذر الحفظ على فايرستور', e);
       showToast('تعذر الحفظ أونلاين — تأكدي من الاتصال بالإنترنت', true);
     });
@@ -2565,6 +2567,8 @@ function startFirestoreSync(){
       FIRESTORE_META.set(metaSnapshot()).catch(e=>console.warn('تعذر إنشاء المستند', e));
       return;
     }
+    // لو فيه تعديل محلي لسه ما اتبعتش (زي حذف حساب) منسيبش نسخة قديمة جاية من السيرفر ترجّعه
+    if(window._metaSavePending || snap.metadata.hasPendingWrites) return;
     _applyingRemoteUpdate = true;
     applyStateSnapshot(snap.data());
     renderAll();
