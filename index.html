@@ -460,6 +460,35 @@
   .db-tl .tx .f{ font-size:11.5px; color:var(--ink-faint); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .db-tl .am{ font-family:'IBM Plex Mono'; font-weight:700; font-size:13px; direction:ltr; align-self:center; }
   .db-empty{ text-align:center; padding:34px 14px; color:var(--ink-faint); font-size:13px; }
+
+  /* ===== المالية (جرد النقدية) ===== */
+  .fn-grid{ display:grid; grid-template-columns:minmax(320px,1.1fr) minmax(320px,1fr); gap:16px; align-items:start; }
+  @media (max-width:1000px){ .fn-grid{ grid-template-columns:1fr; } }
+  .fn-card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 20px; box-shadow:var(--shadow-card); }
+  .fn-card h3{ margin:0 0 3px; font-size:14.5px; font-weight:700; } .fn-card .hint{ font-size:11.8px; color:var(--ink-faint); margin-bottom:14px; }
+  .fn-tbl{ width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border:1px solid var(--border); border-radius:12px; }
+  .fn-tbl th{ background:linear-gradient(180deg,#0E5C56,#0A423E); color:#fff; font-size:12px; padding:10px 12px; text-align:right; font-weight:700; }
+  .fn-tbl td{ padding:8px 12px; border-top:1px solid var(--border-soft); font-size:14px; }
+  .fn-tbl tbody tr:hover{ background:var(--primary-softer); }
+  .fn-den{ display:inline-flex; align-items:center; gap:10px; font-weight:700; font-family:'IBM Plex Mono'; font-size:15px; }
+  .fn-den i{ width:34px; height:20px; border-radius:5px; display:inline-block; box-shadow:inset 0 0 0 1px rgba(0,0,0,.12); }
+  .fn-step{ display:inline-flex; align-items:center; border:1px solid var(--border); border-radius:9px; overflow:hidden; background:var(--surface); }
+  .fn-step button{ border:none; background:var(--surface-alt); width:28px; height:34px; font-size:16px; cursor:pointer; color:var(--ink-soft); }
+  .fn-step button:hover{ background:var(--primary-soft); color:var(--primary-dark); }
+  .fn-step input{ width:70px; border:none; text-align:center; font:inherit; font-weight:700; font-size:14px; padding:6px 2px; outline:none; font-family:'IBM Plex Mono'; background:transparent; }
+  .fn-tot{ font-family:'IBM Plex Mono'; font-weight:700; direction:ltr; text-align:right; }
+  .fn-tbl tfoot td{ background:var(--primary-softer); font-weight:700; border-top:2px solid var(--primary); font-size:15px; }
+  .fn-box{ border-radius:14px; padding:16px 18px; background:linear-gradient(135deg,#0E5C56,#082f2c); color:#fff; position:relative; overflow:hidden; }
+  .fn-box .l{ font-size:12px; opacity:.8; font-weight:600; } .fn-box .v{ font-family:'IBM Plex Mono'; font-size:26px; font-weight:700; margin-top:4px; direction:ltr; text-align:right; }
+  .fn-box .s{ font-size:11.5px; opacity:.72; margin-top:4px; }
+  .fn-box.alt{ background:linear-gradient(135deg,#AD7F35,#7d5a22); }
+  .fn-two{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width:520px){ .fn-two{ grid-template-columns:1fr; } }
+  .fn-verdict{ margin-top:12px; border-radius:12px; padding:12px 14px; font-weight:700; font-size:14px; display:flex; align-items:center; gap:10px; }
+  .fn-verdict.ok{ background:#E3F3EE; color:#0E6B5F; } .fn-verdict.bad{ background:var(--danger-soft); color:var(--danger); } .fn-verdict.wait{ background:var(--surface-alt); color:var(--ink-faint); }
+  .fn-verdict .am{ margin-inline-start:auto; font-family:'IBM Plex Mono'; direction:ltr; }
+  .fn-scale{ display:flex; justify-content:center; margin:6px 0 0; }
+  .fn-snap-wrap{ margin-top:16px; }
 </style>
 </head>
 <body>
@@ -523,6 +552,10 @@
     <div class="nav-item" data-page="balance">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="7.2" height="15" rx="1.2"/><rect x="13.3" y="4.5" width="7.2" height="15" rx="1.2"/></svg>
       <span class="side-label">الميزانية العمومية</span>
+    </div>
+    <div class="nav-item" data-page="finance">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.8"/><path d="M6 9.5v.01M18 14.5v.01"/></svg>
+      <span class="side-label">المالية</span>
     </div>
     <div class="nav-item" data-page="accounts">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><path d="M6 8.4V18M6 12h9a2 2 0 0 0 2-2V8.4"/></svg>
@@ -627,6 +660,47 @@
       </div>
     </section>
     <div id="dbTip"></div>
+
+    <!-- ===================== PAGE: FINANCE (المالية) ===================== -->
+    <section class="page" id="page-finance">
+      <div class="page-head">
+        <div><h1>المالية</h1><p>جرد النقدية الفعلية ومقارنتها برصيد الخزنة في القيود اليومية</p></div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="fnClear()">تصفير الجرد</button>
+          <button class="btn btn-primary" onclick="fnSnap()">حفظ الجرد</button>
+        </div>
+      </div>
+      <div class="fn-grid">
+        <div class="fn-card">
+          <h3>جرد الفئات النقدية</h3>
+          <div class="hint">اكتب عدد الورقات من كل فئة والإجمالي بيتحسب لوحده</div>
+          <table class="fn-tbl">
+            <thead><tr><th>الفئة</th><th>العدد</th><th>الإجمالي</th></tr></thead>
+            <tbody id="fnRows"></tbody>
+            <tfoot><tr><td>إجمالي النقدية</td><td id="fnNotes" style="font-family:'IBM Plex Mono'"></td><td class="fn-tot" id="fnTotal">0.00</td></tr></tfoot>
+          </table>
+        </div>
+        <div>
+          <div class="fn-card">
+            <h3>مقارنة الجرد برصيد الخزنة</h3>
+            <div class="hint">الرصيد بيتسحب تلقائي من القيود اليومية</div>
+            <div class="field" style="margin-bottom:12px;"><label>حساب الخزنة</label><select id="fnAcc" class="rc-per" style="width:100%; padding:9px 10px;" onchange="fnPickAcc(this.value)"></select></div>
+            <div class="field" style="margin-bottom:12px;"><label>الرصيد حتى تاريخ (اختياري)</label><input type="date" id="fnDate" oninput="renderFinance()"></div>
+            <div class="fn-two">
+              <div class="fn-box"><div class="l">رصيد الخزنة حسب القيود</div><div class="v" id="fnBook">0.00</div><div class="s" id="fnBookSub">—</div></div>
+              <div class="fn-box alt"><div class="l">النقدية الفعلية (الجرد)</div><div class="v" id="fnCount">0.00</div><div class="s">من جدول الفئات</div></div>
+            </div>
+            <div class="fn-scale" id="fnScale"></div>
+            <div class="fn-verdict wait" id="fnVerdict"></div>
+          </div>
+          <div class="fn-card fn-snap-wrap">
+            <h3>سجل الجرد المحفوظ</h3>
+            <div class="hint">آخر عمليات الجرد اللي حفظتها</div>
+            <div class="table-wrap" style="max-height:260px;"><table><thead><tr><th>التاريخ</th><th class="num">الجرد</th><th class="num">القيود</th><th class="num">الفرق</th><th></th></tr></thead><tbody id="fnSnaps"></tbody></table></div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- ===================== PAGE: CHART OF ACCOUNTS ===================== -->
     <section class="page" id="page-accounts">
@@ -3169,6 +3243,7 @@ function wipeAllData(){
 function renderAll(){
   saveState();
   try{ renderDashboard(); }catch(e){ console.warn("dashboard", e); }
+  try{ renderFinance(); }catch(e){ console.warn("finance", e); }
   applyCompanyBranding();
   renderAccountsTree();
   renderSubAccounts();
@@ -3948,6 +4023,116 @@ function renderDashboard(){
   page.addEventListener('mouseleave', ()=>{ tip.style.display = 'none'; });
   renderDashboard();
 })();
+
+</script>
+<script>
+/* ============================================================
+   المالية — جرد النقدية ومقارنته برصيد خزنة الديب
+   ============================================================ */
+const FN_KEY = 'dafatra_finance_v1';
+const FN_DENOMS = [{v:200,c:'#8e6bbd'},{v:100,c:'#3f7fbf'},{v:50,c:'#e0963f'},{v:20,c:'#4fa56b'},{v:10,c:'#c4563f'},{v:5,c:'#8a9a98'},{v:1,c:'#c9b87a'}];
+let fnStore = {counts:{}, acc:'', snaps:[]};
+function fnLoad(){ try{ const d = JSON.parse(localStorage.getItem(FN_KEY)||'null'); if(d){ fnStore.counts = d.counts||{}; fnStore.acc = d.acc||''; fnStore.snaps = Array.isArray(d.snaps)?d.snaps:[]; } }catch(e){} }
+function fnPersist(){ try{ localStorage.setItem(FN_KEY, JSON.stringify(fnStore)); }catch(e){} }
+function fnCounted(){ return FN_DENOMS.reduce((s,d)=> s + d.v * (parseInt(fnStore.counts[d.v],10)||0), 0); }
+function fnNotes(){ return FN_DENOMS.reduce((s,d)=> s + (parseInt(fnStore.counts[d.v],10)||0), 0); }
+
+function fnAutoAccount(){
+  const sub = accounts.filter(a=>a.postable);
+  const t = s => normAr(s);
+  return sub.find(a=> t(a.name).includes(t('خزنة الديب')) || /khaznat|eldeep/i.test(a.name+' '+a.code))
+      || sub.find(a=> t(a.name).includes(t('خزنة')) || t(a.name).includes(t('خزينة'))) || null;
+}
+function fnAccount(){
+  if(fnStore.acc){ const a = accounts.find(x=>x.code===fnStore.acc && x.postable); if(a) return a; }
+  return fnAutoAccount();
+}
+function fnBookBalance(a, upTo){
+  let b = 0, n = 0, last = '';
+  entries.forEach(e=>{
+    if(upTo && e.date > upTo) return;
+    (e.lines||[]).forEach(l=>{ if(l.code===a.code){ b += (l.debit||0) - (l.credit||0); n++; if(e.date > last) last = e.date; } });
+  });
+  return {bal: (a.type==='asset'||a.type==='expense') ? b : -b, n, last};
+}
+function fnPickAcc(code){ fnStore.acc = code; fnPersist(); renderFinance(); }
+function fnSet(v, val){ fnStore.counts[v] = val; fnPersist(); fnUpdateTotals(); renderFinance(true); }
+function fnStep(v, d){
+  const cur = parseInt(fnStore.counts[v],10)||0, nv = Math.max(0, cur + d);
+  fnStore.counts[v] = nv; fnPersist();
+  const inp = document.getElementById('fnIn'+v); if(inp) inp.value = nv;
+  fnUpdateTotals(); renderFinance(true);
+}
+function fnClear(){ if(!confirm('تصفير كل الأعداد؟')) return; fnStore.counts = {}; fnPersist(); fnBuildRows(); renderFinance(); }
+function fnBuildRows(){
+  document.getElementById('fnRows').innerHTML = FN_DENOMS.map(d=>`<tr>
+    <td><span class="fn-den"><i style="background:${d.c}"></i>${d.v}</span></td>
+    <td><div class="fn-step"><button type="button" onclick="fnStep(${d.v},-1)">−</button><input type="number" min="0" id="fnIn${d.v}" value="${fnStore.counts[d.v]||''}" placeholder="0" oninput="fnSet(${d.v}, this.value)"><button type="button" onclick="fnStep(${d.v},1)">+</button></div></td>
+    <td class="fn-tot" id="fnT${d.v}">${fmt(d.v*(parseInt(fnStore.counts[d.v],10)||0))}</td></tr>`).join('');
+}
+function fnUpdateTotals(){
+  FN_DENOMS.forEach(d=>{ const el = document.getElementById('fnT'+d.v); if(el) el.textContent = fmt(d.v*(parseInt(fnStore.counts[d.v],10)||0)); });
+  document.getElementById('fnTotal').textContent = fmt(fnCounted());
+  document.getElementById('fnNotes').textContent = fnNotes() + ' ورقة';
+}
+function fnScaleSvg(diff, state){
+  const th = state==='wait' ? 0 : Math.max(-14, Math.min(14, diff === 0 ? 0 : (diff>0?1:-1) * (6 + Math.min(8, Math.log10(Math.abs(diff)+1)*2.2))));
+  const cx = 160, cy = 56, L = 112, r = th * Math.PI / 180;
+  const rx = cx + L*Math.cos(r), ry = cy + L*Math.sin(r), lx = cx - L*Math.cos(r), ly = cy - L*Math.sin(r);
+  const col = state==='ok' ? '#14A08F' : state==='bad' ? '#D2694A' : '#9aa9a7';
+  const pan = (x,y,label,fill)=>`<line x1="${x}" y1="${y}" x2="${x-26}" y2="${y+58}" stroke="${col}" stroke-width="1.6"/><line x1="${x}" y1="${y}" x2="${x+26}" y2="${y+58}" stroke="${col}" stroke-width="1.6"/>
+    <path d="M${x-34} ${y+58} h68 a0 0 0 0 1 0 0 q-6 18 -34 18 q-28 0 -34 -18z" fill="${fill}" opacity=".92"/><text x="${x}" y="${y+72}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#fff">${label}</text>`;
+  return `<svg viewBox="0 0 320 215" width="320" class="db-svg" style="max-width:250px;width:100%">
+    <path d="M${cx-34} 205 h68 M${cx} 205 v-${205-cy-8}" stroke="${col}" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <circle cx="${cx}" cy="${cy}" r="9" fill="${col}"/><circle cx="${cx}" cy="${cy}" r="3.5" fill="#fff"/>
+    <line x1="${lx}" y1="${ly}" x2="${rx}" y2="${ry}" stroke="${col}" stroke-width="5" stroke-linecap="round"/>
+    ${pan(rx, ry, 'الجرد', '#AD7F35')}${pan(lx, ly, 'القيود', '#0E5C56')}</svg>`;
+}
+function renderFinance(keepInputs){
+  const page = document.getElementById('page-finance'); if(!page) return;
+  if(!keepInputs && !document.getElementById('fnRows').children.length) fnBuildRows();
+  fnUpdateTotals();
+  const sel = document.getElementById('fnAcc'), acc = fnAccount();
+  if(!keepInputs){
+    const opts = accounts.filter(a=>a.postable).sort((a,b)=>a.code.localeCompare(b.code));
+    sel.innerHTML = opts.length ? opts.map(a=>`<option value="${a.code}" ${acc&&acc.code===a.code?'selected':''}>${escHtml(a.code)} — ${escHtml(a.name)}</option>`).join('') : '<option value="">مفيش حسابات</option>';
+  }
+  const counted = fnCounted(); document.getElementById('fnCount').textContent = fmt(counted);
+  const v = document.getElementById('fnVerdict');
+  if(!acc){
+    document.getElementById('fnBook').textContent = '—'; document.getElementById('fnBookSub').textContent = 'اختار حساب الخزنة';
+    v.className = 'fn-verdict wait'; v.innerHTML = 'اختار حساب الخزنة عشان تتم المقارنة';
+    document.getElementById('fnScale').innerHTML = fnScaleSvg(0,'wait'); renderFnSnaps(); return;
+  }
+  const bk = fnBookBalance(acc, document.getElementById('fnDate').value);
+  document.getElementById('fnBook').textContent = fmt(bk.bal);
+  document.getElementById('fnBookSub').textContent = acc.name + ' · ' + bk.n + ' حركة' + (bk.last ? ' · آخر حركة ' + bk.last.split('-').reverse().join('/') : '');
+  const diff = Math.round((counted - bk.bal) * 100) / 100;
+  const started = counted > 0 || fnNotes() > 0;
+  let state, html;
+  if(!started){ state = 'wait'; html = 'اكتب عدد الورقات في الجدول عشان نقارنها بالقيود'; }
+  else if(Math.abs(diff) < 0.005){ state = 'ok'; html = '✅ متطابقين — الجرد مطابق لرصيد الخزنة في القيود'; }
+  else if(diff > 0){ state = 'bad'; html = '⚠️ غير متطابقين — زيادة في الجرد عن القيود <span class="am">+' + fmt(diff) + '</span>'; }
+  else { state = 'bad'; html = '⚠️ غير متطابقين — عجز في الجرد عن القيود <span class="am">−' + fmt(Math.abs(diff)) + '</span>'; }
+  v.className = 'fn-verdict ' + (state==='wait'?'wait':state); v.innerHTML = html;
+  document.getElementById('fnScale').innerHTML = fnScaleSvg(started ? diff : 0, state);
+  renderFnSnaps();
+}
+function fnSnap(){
+  const acc = fnAccount(); if(!acc){ showToast('اختار حساب الخزنة الأول', true); return; }
+  if(!fnNotes()){ showToast('اكتب عدد الورقات الأول', true); return; }
+  const bk = fnBookBalance(acc, document.getElementById('fnDate').value), c = fnCounted();
+  fnStore.snaps.unshift({id:Date.now(), date:new Date().toISOString().slice(0,10), counted:c, book:bk.bal, diff:Math.round((c-bk.bal)*100)/100, acc:acc.name});
+  fnStore.snaps = fnStore.snaps.slice(0,30); fnPersist(); renderFnSnaps(); showToast('تم حفظ الجرد');
+}
+function fnDelSnap(id){ fnStore.snaps = fnStore.snaps.filter(s=>s.id!==id); fnPersist(); renderFnSnaps(); }
+function renderFnSnaps(){
+  const tb = document.getElementById('fnSnaps');
+  tb.innerHTML = fnStore.snaps.length ? fnStore.snaps.map(s=>`<tr><td class="num date-col">${s.date.split('-').reverse().join('/')}</td><td class="num">${fmt(s.counted)}</td><td class="num">${fmt(s.book)}</td>
+    <td class="num" style="font-weight:700;color:${Math.abs(s.diff)<0.005?'#0E6B5F':'var(--danger)'}">${Math.abs(s.diff)<0.005?'مطابق':(s.diff>0?'+':'−')+fmt(Math.abs(s.diff))}</td>
+    <td><button class="btn btn-danger-text" onclick="fnDelSnap(${s.id})">حذف</button></td></tr>`).join('') : '<tr><td colspan="5"><div class="empty-state">لسه مفيش جرد محفوظ</div></td></tr>';
+}
+fnLoad(); fnBuildRows(); renderFinance();
 
 </script>
 </body>
