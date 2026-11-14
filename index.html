@@ -348,6 +348,8 @@
   .rc-brand-row > span{ font-size:12px; font-weight:600; color:var(--ink-soft); min-width:92px; }
   .rc-brand-row img{ width:34px; height:34px; object-fit:contain; border:1px solid var(--border); border-radius:6px; background:#fff; }
   .rc-brand-row input[type=file]{ font-size:11.5px; max-width:190px; }
+  .rc-warn{ background:var(--danger-soft); color:var(--danger); border:1px solid #e7c4bb; border-radius:var(--radius-s); padding:9px 12px; font-size:12.5px; font-weight:600; line-height:1.7; margin:10px 0; }
+  .rc-warn button{ margin-inline-start:8px; }
   .rc-inline{ display:flex; gap:8px; align-items:center; }
   .rc-inline input{ flex:1; }
   .rc-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
@@ -718,28 +720,7 @@
       <div class="rc-grid">
         <div>
           <div class="card card-pad">
-            <div class="section-title"><span class="dot" style="background:var(--primary)"></span>بيانات الإيصال</div>
-            <div class="field-row">
-              <div class="field"><label>رقم الإيصال</label><input type="text" id="rcNo" oninput="rcSet('no',this.value)"></div>
-              <div class="field"><label>التاريخ</label><input type="date" id="rcDate" oninput="rcSet('date',this.value)"></div>
-            </div>
-            <div class="field"><label>عنوان الإيصال</label><input type="text" id="rcTitle" oninput="rcSet('title',this.value)"></div>
-            <div class="field"><label>استلمت أنا / (اسم المستلم)</label><input type="text" id="rcName" oninput="rcSet('name',this.value)" placeholder="مثال: نورا"></div>
-            <div class="field-row">
-              <div class="field"><label>المبلغ</label><input type="number" step="0.01" min="0" id="rcAmount" oninput="rcAmountInput(this.value)" placeholder="0.00"></div>
-              <div class="field"><label>العملة (رمز)</label><input type="text" id="rcCur" oninput="rcSet('cur',this.value)"></div>
-            </div>
-            <div class="field">
-              <label>المبلغ بالحروف</label>
-              <div class="rc-inline">
-                <input type="text" id="rcWords" oninput="rcWordsInput(this.value)">
-                <button class="btn btn-ghost btn-sm" type="button" onclick="rcAutoWords()" title="كتابة المبلغ تلقائيًا">تلقائي</button>
-              </div>
-              <div class="field-hint">بيتكتب تلقائي من المبلغ، وتقدر تعدّله بإيدك</div>
-            </div>
-            <div class="field"><label>وذلك عن</label><input type="text" id="rcReason" oninput="rcSet('reason',this.value)" placeholder="مثال: سلفة شهر 8-2026"></div>
-
-            <div class="section-title" style="margin-top:18px;"><span class="dot" style="background:var(--gold)"></span>جدول الفئات
+            <div class="section-title" style="margin-top:0;"><span class="dot" style="background:var(--gold)"></span>جدول الفئات
               <label style="margin-inline-start:auto; font-weight:500; display:flex; gap:6px; align-items:center; cursor:pointer;">
                 <input type="checkbox" id="rcShowTable" onchange="rcSet('showTable',this.checked); rcRenderRows();"> إظهار الجدول في الإيصال
               </label>
@@ -754,6 +735,30 @@
                 <span class="field-hint" style="margin:0;">الإجمالي = الفئة × العدد، والمبلغ بيتحدّث تلقائي من الجدول</span>
               </div>
             </div>
+            <div class="rc-warn" style="display:none;"></div>
+            <div style="height:6px;"></div>
+            <hr style="border:none;border-top:1px solid var(--border-soft);margin:14px 0 16px;">
+            <div class="section-title"><span class="dot" style="background:var(--primary)"></span>بيانات الإيصال</div>
+            <div class="field-row">
+              <div class="field"><label>رقم الإيصال</label><input type="text" id="rcNo" oninput="rcSet('no',this.value)"></div>
+              <div class="field"><label>التاريخ</label><input type="date" id="rcDate" oninput="rcSet('date',this.value)"></div>
+            </div>
+            <div class="field"><label>عنوان الإيصال</label><input type="text" id="rcTitle" oninput="rcSet('title',this.value)"></div>
+            <div class="field"><label>استلمت أنا / (اسم المستلم)</label><input type="text" id="rcName" oninput="rcSet('name',this.value)" placeholder="مثال: نورا"></div>
+            <div class="field-row">
+              <div class="field"><label>المبلغ</label><input type="number" step="0.01" min="0" id="rcAmount" oninput="rcAmountInput(this.value)" placeholder="0.00"></div>
+              <div class="field"><label>العملة (رمز)</label><input type="text" id="rcCur" oninput="rcSet('cur',this.value)"></div>
+            </div>
+            <div class="rc-warn" style="display:none;"></div>
+            <div class="field">
+              <label>المبلغ بالحروف</label>
+              <div class="rc-inline">
+                <input type="text" id="rcWords" oninput="rcWordsInput(this.value)">
+                <button class="btn btn-ghost btn-sm" type="button" onclick="rcAutoWords()" title="كتابة المبلغ تلقائيًا">تلقائي</button>
+              </div>
+              <div class="field-hint">بيتكتب تلقائي من المبلغ، وتقدر تعدّله بإيدك</div>
+            </div>
+            <div class="field"><label>وذلك عن</label><input type="text" id="rcReason" oninput="rcSet('reason',this.value)" placeholder="مثال: سلفة شهر 8-2026"></div>
           </div>
 
           <div class="card card-pad" style="margin-top:16px;">
@@ -775,6 +780,7 @@
         <div class="rc-sticky">
           <div class="card card-pad">
             <div class="section-title"><span class="dot" style="background:var(--primary)"></span>المعاينة</div>
+            <div class="rc-warn" style="display:none;margin-bottom:10px;"></div>
             <div class="rc-prev-box"><div class="rc-prev-zoom" id="rcPreview"></div></div>
             <div class="rc-actions">
               <button class="btn btn-primary" onclick="rcPrintCurrent()">
@@ -3196,7 +3202,7 @@ const RC_CSS = `
 .rc *{ box-sizing:border-box; }
 .rc.l1{ font-size:15px; width:190mm; height:126mm; }
 .rc.l3{ font-size:10.8px; width:190mm; height:89mm; }
-.rc-in{ height:100%; border:.1em solid var(--main); border-radius:1.15em; padding:1.1em 2.4em 1em; display:flex; flex-direction:column; }
+.rc-in{ height:100%; border:.1em solid var(--main); border-radius:1.15em; padding:1.1em 2.4em 1.3em; display:flex; flex-direction:column; overflow:hidden; }
 .rc-hd{ display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:.7em; border-bottom:.24em solid var(--acc); }
 .rc-co{ font-weight:800; font-size:2.05em; line-height:1.15; }
 .rc-en{ font-weight:700; font-size:.78em; letter-spacing:.2em; margin-top:.25em; direction:ltr; text-align:right; }
@@ -3213,14 +3219,14 @@ const RC_CSS = `
 .rc-amt .lb{ font-weight:700; font-size:1.12em; white-space:nowrap; }
 .rc-amt .words{ flex:1; border-bottom:.1em solid var(--main); font-weight:700; font-size:1em; min-height:1.5em; padding:0 .3em .1em; }
 .rc-box{ background:var(--main); color:#fff; font-weight:800; font-size:1.05em; border-radius:.55em; padding:.5em 1em; white-space:nowrap; direction:rtl; min-width:6.4em; text-align:center; }
-.rc-bt{ display:flex; justify-content:space-between; align-items:flex-end; margin-top:auto; gap:1em; }
+.rc-bt{ display:flex; justify-content:space-between; align-items:flex-end; margin-top:auto; padding-top:1.1em; gap:1em; }
 .rc-tbl{ border-collapse:collapse; width:100%; font-size:.8em; font-weight:700; text-align:center; }
-.rc-tbl th{ background:var(--main); color:#fff; border:.08em solid var(--main); padding:.35em .4em; }
-.rc-tbl td{ border:.08em solid var(--gold); padding:.35em .4em; background:#fff; direction:ltr; }
+.rc-tbl th{ background:var(--main); color:#fff; border:.08em solid var(--main); padding:.3em .4em; }
+.rc-tbl td{ border:.08em solid var(--gold); padding:.28em .4em; background:#fff; direction:ltr; }
 .rc-tbl tr.tot td{ border-top:.2em double var(--gold); direction:rtl; }
 .rc-tbl tr.tot td.n{ direction:ltr; }
 .rc-sig{ font-weight:700; font-size:1.05em; width:38%; }
-.rc-sig div{ border-bottom:.1em solid var(--main); height:3.2em; }
+.rc-sig div{ border-bottom:.1em solid var(--main); height:2.4em; }
 .rc-sig span{ display:block; margin-bottom:.4em; }
 .rc-stamp{ height:4.6em; width:4.6em; object-fit:contain; }
 .rc-mid{ display:flex; justify-content:space-between; align-items:flex-end; gap:1em; margin-top:.3em; }
@@ -3262,14 +3268,38 @@ function rcInjectCss(){
   const l = document.createElement('link'); l.rel = 'stylesheet';
   l.href = 'https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&display=swap'; document.head.appendChild(l);
 }
+function rcFit(root){
+  (root||document).querySelectorAll('.rc').forEach(rc=>{
+    const inn = rc.querySelector('.rc-in'); if(!inn) return;
+    let fs = parseFloat(getComputedStyle(rc).fontSize), guard = 0;
+    while(inn.scrollHeight > inn.clientHeight + 1 && fs > 5 && guard++ < 60){ fs -= 0.25; rc.style.fontSize = fs + 'px'; }
+  });
+}
+function rcMismatch(c){
+  if(!c.showTable) return null;
+  const t = Math.round(rcTableTotal(c)*100)/100, a = Math.round((parseFloat(c.amount)||0)*100)/100;
+  if(t > 0 && a > 0 && Math.abs(t - a) > 0.001) return {table:t, amount:a, diff:Math.abs(t-a)};
+  return null;
+}
+function rcMismatchText(m){ return 'المبلغ المكتوب (' + fmt(m.amount) + ') غير مطابق لإجمالي جدول الفئات (' + fmt(m.table) + ') — الفرق ' + fmt(m.diff); }
+function rcUseTableTotal(){ rcCur.amountManual = false; rcSyncAmountFromTable(); rcRenderPreview(); }
+function rcUpdateWarn(){
+  const m = rcMismatch(rcCur);
+  document.querySelectorAll('.rc-warn').forEach(el=>{
+    if(m){ el.style.display = ''; el.innerHTML = '⚠️ تحذير: ' + escHtml(rcMismatchText(m)) + '<button class="btn btn-ghost btn-sm" type="button" onclick="rcUseTableTotal()">استخدم إجمالي الجدول</button>'; }
+    else { el.style.display = 'none'; el.innerHTML = ''; }
+  });
+}
 function rcRenderPreview(){
   const el = document.getElementById('rcPreview'); if(!el || !rcCur) return;
   el.innerHTML = rcReceiptHtml(rcCur, rcStore.brand, 'l1');
+  rcFit(el); rcUpdateWarn();
 }
 
 /* ---------- القائمة المحفوظة ---------- */
 function rcSave(){
   const c = rcCur;
+  { const m = rcMismatch(c); if(m && !confirm('⚠️ ' + rcMismatchText(m) + '\n\nتكمّل وتحفظ الإيصال برضه؟')) return; }
   if(!(c.name||'').trim() && !(parseFloat(c.amount) > 0)){ showToast('اكتب اسم المستلم أو المبلغ الأول', true); return; }
   const snap = JSON.parse(JSON.stringify(c));
   snap.brand = JSON.parse(JSON.stringify(rcStore.brand));
@@ -3335,10 +3365,12 @@ html,body{ margin:0; padding:0; -webkit-print-color-adjust:exact; print-color-ad
 .sheet{ width:194mm; height:280mm; display:flex; flex-direction:column; align-items:center; justify-content:${per===3?'space-between':'flex-start'}; gap:${per===2?'6mm':'0'}; page-break-after:always; break-after:page; overflow:hidden; }
 .sheet:last-child{ page-break-after:auto; break-after:auto; }
 ${RC_CSS}
-</style></head><body>${body}</body></html>`;
+</style></head><body>${body}<script>(function(){function fit(){document.querySelectorAll('.rc').forEach(function(rc){var inn=rc.querySelector('.rc-in');if(!inn)return;var fs=parseFloat(getComputedStyle(rc).fontSize),g=0;while(inn.scrollHeight>inn.clientHeight+1&&fs>5&&g++<60){fs-=0.25;rc.style.fontSize=fs+'px';}});}fit();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);})();<\/script></body></html>`;
 }
 function rcPrintItems(items){
   if(!items.length){ showToast('مفيش إيصالات للطباعة', true); return; }
+  const bad = items.map(rcMismatch).filter(Boolean);
+  if(bad.length && !confirm('⚠️ ' + (items.length>1 ? bad.length + ' إيصال فيهم عدم تطابق بين المبلغ وإجمالي الجدول.\n\n' : '') + rcMismatchText(bad[0]) + '\n\nتكمّل الطباعة برضه؟')) return;
   openPrintWindow(rcBuildDoc(items, rcStore.per), 'rcPrint');
 }
 function rcPrintCurrent(){
