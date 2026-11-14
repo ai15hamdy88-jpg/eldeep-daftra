@@ -315,9 +315,58 @@
   .section-title .dot{ width:7px; height:7px; border-radius:50%; }
 
   .muted{ color:var(--ink-faint); }
+
+  #loginOverlay{position:fixed;inset:0;z-index:99999;background:linear-gradient(160deg,#0A423E,#0E5C56 60%,#13756d);display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit}
+  #loginOverlay.hidden{display:none}
+  .login-card{background:#fff;border-radius:16px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center}
+  .login-card h1{margin:0 0 4px;font-size:22px;color:#0E5C56}
+  .login-card p{margin:0 0 22px;color:#5E7371;font-size:13px}
+  .login-card input{width:100%;box-sizing:border-box;padding:12px 14px;margin-bottom:12px;border:1px solid #DEE6E7;border-radius:10px;font:inherit;font-size:15px;direction:ltr;text-align:left}
+  .login-card input:focus{outline:2px solid #0E5C56;border-color:#0E5C56}
+  .login-card button.main{width:100%;padding:12px;border:0;border-radius:10px;background:#0E5C56;color:#fff;font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+  .login-card button.main:disabled{opacity:.6;cursor:wait}
+  .login-card a{display:inline-block;margin-top:14px;font-size:12.5px;color:#2E5F8A;cursor:pointer;text-decoration:underline}
+  #loginMsg{min-height:20px;margin-top:10px;font-size:13px;color:#A34632}
+  #loginMsg.ok{color:#0E5C56}
+
+  /* ===== Receipt page (إيصال استلام) ===== */
+  .rc-grid{ display:grid; grid-template-columns:minmax(320px,1fr) minmax(300px,590px); gap:18px; align-items:start; }
+  @media (max-width:1100px){ .rc-grid{ grid-template-columns:1fr; } }
+  .rc-sticky{ position:sticky; top:calc(var(--topbar-h) + var(--navbar-h) + 14px); }
+  @media (max-width:1100px){ .rc-sticky{ position:static; } }
+  .rc-prev-box{ overflow:auto; background:var(--surface-alt); border-radius:var(--radius-m); padding:12px; display:flex; justify-content:center; }
+  .rc-prev-zoom{ zoom:.72; flex:none; }
+  @media (max-width:700px){ .rc-prev-zoom{ zoom:.42; } }
+  .rc-rows{ table-layout:fixed; }
+  .rc-rows thead th{ background:none !important; color:var(--ink-faint) !important; position:static; border:none; border-radius:0 !important; font-size:11.5px; text-align:right; padding:4px 6px; font-weight:600; }
+  .rc-rows tbody tr:hover{ background:none; }
+  .rc-rows th:last-child, .rc-rows td:last-child{ width:30px; }
+  .rc-rows th:nth-child(3), .rc-rows td:nth-child(3){ width:96px; }
+  .rc-rows td{ padding:4px 4px; }
+  .rc-rows input{ padding:7px 8px; font-size:13px; }
+  .rc-brand-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .rc-brand-row > span{ font-size:12px; font-weight:600; color:var(--ink-soft); min-width:92px; }
+  .rc-brand-row img{ width:34px; height:34px; object-fit:contain; border:1px solid var(--border); border-radius:6px; background:#fff; }
+  .rc-brand-row input[type=file]{ font-size:11.5px; max-width:190px; }
+  .rc-inline{ display:flex; gap:8px; align-items:center; }
+  .rc-inline input{ flex:1; }
+  .rc-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .rc-per{ border:1px solid var(--border); border-radius:var(--radius-s); padding:7px 10px; font:inherit; font-size:12.5px; background:var(--surface); }
 </style>
 </head>
 <body>
+<div id="loginOverlay">
+  <div class="login-card">
+    <h1>🔐 تسجيل الدخول</h1>
+    <p>نظام دفترة المحاسبي</p>
+    <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" autocomplete="username">
+    <input type="password" id="loginPass" placeholder="كلمة المرور" autocomplete="current-password">
+    <button class="main" id="loginBtn">دخول</button>
+    <div id="loginMsg"></div>
+    <a id="loginForgot">نسيت كلمة المرور؟</a>
+  </div>
+</div>
+
 
 <div class="shell">
 
@@ -339,6 +388,7 @@
       </div>
       <div class="date-chip" id="todayChip">—</div>
       <div class="date-chip" id="syncChip" title="حالة المزامنة">⏳ جاري الاتصال…</div>
+      <div class="date-chip" id="logoutChip" title="تسجيل الخروج" style="cursor:pointer">🚪 خروج</div>
     </div>
   </div>
 
@@ -366,6 +416,11 @@
     <div class="nav-item active" data-page="accounts">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><path d="M6 8.4V18M6 12h9a2 2 0 0 0 2-2V8.4"/></svg>
       <span class="side-label">شجرة الحسابات</span>
+    </div>
+
+    <div class="nav-item" data-page="receipt">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+      <span class="side-label">إيصال استلام</span>
     </div>
 
     <div class="nav-item nav-settings" data-page="settings">
@@ -649,6 +704,115 @@
     </section>
 
     <!-- ===================== PAGE: SETTINGS ===================== -->
+    <!-- ===================== PAGE: RECEIPT (إيصال استلام) ===================== -->
+    <section class="page" id="page-receipt">
+      <div class="page-head">
+        <div>
+          <h1>إيصال استلام</h1>
+          <p>سجّل بيانات الإيصال، شوف المعاينة، واطبعه PDF — إيصال واحد أو كذا إيصال في ورقة A4</p>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="rcNew()">+ إيصال جديد</button>
+        </div>
+      </div>
+
+      <div class="rc-grid">
+        <div>
+          <div class="card card-pad">
+            <div class="section-title"><span class="dot" style="background:var(--primary)"></span>بيانات الإيصال</div>
+            <div class="field-row">
+              <div class="field"><label>رقم الإيصال</label><input type="text" id="rcNo" oninput="rcSet('no',this.value)"></div>
+              <div class="field"><label>التاريخ</label><input type="date" id="rcDate" oninput="rcSet('date',this.value)"></div>
+            </div>
+            <div class="field"><label>عنوان الإيصال</label><input type="text" id="rcTitle" oninput="rcSet('title',this.value)"></div>
+            <div class="field"><label>استلمت أنا / (اسم المستلم)</label><input type="text" id="rcName" oninput="rcSet('name',this.value)" placeholder="مثال: نورا"></div>
+            <div class="field-row">
+              <div class="field"><label>المبلغ</label><input type="number" step="0.01" min="0" id="rcAmount" oninput="rcAmountInput(this.value)" placeholder="0.00"></div>
+              <div class="field"><label>العملة (رمز)</label><input type="text" id="rcCur" oninput="rcSet('cur',this.value)"></div>
+            </div>
+            <div class="field">
+              <label>المبلغ بالحروف</label>
+              <div class="rc-inline">
+                <input type="text" id="rcWords" oninput="rcWordsInput(this.value)">
+                <button class="btn btn-ghost btn-sm" type="button" onclick="rcAutoWords()" title="كتابة المبلغ تلقائيًا">تلقائي</button>
+              </div>
+              <div class="field-hint">بيتكتب تلقائي من المبلغ، وتقدر تعدّله بإيدك</div>
+            </div>
+            <div class="field"><label>وذلك عن</label><input type="text" id="rcReason" oninput="rcSet('reason',this.value)" placeholder="مثال: سلفة شهر 8-2026"></div>
+
+            <div class="section-title" style="margin-top:18px;"><span class="dot" style="background:var(--gold)"></span>جدول الفئات
+              <label style="margin-inline-start:auto; font-weight:500; display:flex; gap:6px; align-items:center; cursor:pointer;">
+                <input type="checkbox" id="rcShowTable" onchange="rcSet('showTable',this.checked); rcRenderRows();"> إظهار الجدول في الإيصال
+              </label>
+            </div>
+            <div id="rcTableBox">
+              <table class="rc-rows" style="width:100%;">
+                <thead><tr><th>الفئة</th><th>العدد</th><th>الإجمالي</th><th></th></tr></thead>
+                <tbody id="rcRowsBody"></tbody>
+              </table>
+              <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+                <button class="btn btn-ghost btn-sm" type="button" onclick="rcAddRow()">+ سطر</button>
+                <span class="field-hint" style="margin:0;">الإجمالي = الفئة × العدد، والمبلغ بيتحدّث تلقائي من الجدول</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card-pad" style="margin-top:16px;">
+            <div class="section-title"><span class="dot" style="background:var(--gold)"></span>اسم الشركة والشعارات (بتتغيّر قبل الطباعة)</div>
+            <div class="field-row">
+              <div class="field"><label>اسم الشركة</label><input type="text" id="rcBName" oninput="rcBrandSet('name',this.value)"></div>
+              <div class="field"><label>السطر الإنجليزي</label><input type="text" id="rcBEn" dir="ltr" oninput="rcBrandSet('en',this.value)" placeholder="FIRST DS CONTRACTING"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>اللون الأساسي</label><input type="color" id="rcBMain" oninput="rcBrandSet('main',this.value)" style="height:38px; padding:3px;"></div>
+              <div class="field"><label>لون الخط تحت العنوان</label><input type="color" id="rcBAcc" oninput="rcBrandSet('acc',this.value)" style="height:38px; padding:3px;"></div>
+            </div>
+            <div class="rc-brand-row"><span>شعار فوق (1)</span><img id="rcPrevLogo1" alt=""><input type="file" accept="image/*" onchange="rcLogoPick('logo1',this)"><button class="btn btn-ghost btn-sm" type="button" onclick="rcLogoClear('logo1')">إزالة</button><button class="btn btn-ghost btn-sm" type="button" onclick="rcLogoReset('logo1')">الافتراضي</button></div>
+            <div class="rc-brand-row"><span>شعار فوق (2)</span><img id="rcPrevLogo2" alt=""><input type="file" accept="image/*" onchange="rcLogoPick('logo2',this)"><button class="btn btn-ghost btn-sm" type="button" onclick="rcLogoClear('logo2')">إزالة</button><button class="btn btn-ghost btn-sm" type="button" onclick="rcLogoReset('logo2')">الافتراضي</button></div>
+            <div class="rc-brand-row"><span>الختم / شعار تحت</span><img id="rcPrevStamp" alt=""><input type="file" accept="image/*" onchange="rcLogoPick('stamp',this)"><button class="btn btn-ghost btn-sm" type="button" onclick="rcLogoClear('stamp')">إزالة</button></div>
+          </div>
+        </div>
+
+        <div class="rc-sticky">
+          <div class="card card-pad">
+            <div class="section-title"><span class="dot" style="background:var(--primary)"></span>المعاينة</div>
+            <div class="rc-prev-box"><div class="rc-prev-zoom" id="rcPreview"></div></div>
+            <div class="rc-actions">
+              <button class="btn btn-primary" onclick="rcPrintCurrent()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2M6 14h12v7H6z"/></svg>
+                طباعة / PDF
+              </button>
+              <button class="btn btn-ghost" onclick="rcSave()">+ إضافة للقائمة</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-pad" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; border-bottom:1px solid var(--border-soft);">
+          <div class="section-title" style="margin:0;"><span class="dot" style="background:var(--gold)"></span>قائمة الإيصالات المحفوظة <span class="muted" id="rcCount"></span></div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <label style="font-size:12.5px; color:var(--ink-soft);">عدد الإيصالات في ورقة A4:</label>
+            <select class="rc-per" id="rcPer" onchange="rcPerChange(this.value)">
+              <option value="1">إيصال واحد</option>
+              <option value="2">2 في الورقة</option>
+              <option value="3">3 في الورقة</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="rcPrintSelected()">طباعة المحدد PDF</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="max-height:420px;">
+          <table>
+            <thead><tr>
+              <th style="width:40px;"><input type="checkbox" id="rcSelAll" onchange="rcSelectAll(this.checked)"></th>
+              <th>رقم</th><th>التاريخ</th><th>المستلم</th><th>وذلك عن</th><th class="num">المبلغ</th><th></th>
+            </tr></thead>
+            <tbody id="rcListBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <section class="page" id="page-settings">
       <div class="page-head">
         <div>
@@ -882,6 +1046,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script>
 /* ============================================================
    FIREBASE INIT — الاتصال بقاعدة بيانات Firestore
@@ -920,6 +1085,17 @@ function setSync(state, detail){
   if(detail) el.title = String(detail);
 }
 window.addEventListener('offline', ()=>setSync('off'));
+// اضغط على مؤشر المزامنة = إعادة تحميل كامل للقيود من السيرفر
+document.addEventListener('DOMContentLoaded', ()=>{
+  const c = document.getElementById('syncChip');
+  if(c){ c.style.cursor='pointer'; c.title='اضغط لإعادة مزامنة كاملة من السيرفر';
+    c.addEventListener('click', ()=>{
+      if(!confirm('إعادة تحميل كل البيانات من السيرفر؟')) return;
+      try{ localStorage.removeItem('daftara_entries_lastsync_v2'); }catch(e){}
+      location.reload();
+    });
+  }
+});
 window.addEventListener('online',  ()=>setSync('cache'));
 let _applyingRemoteUpdate = false; // عشان نمنع لوب لا نهائي لما نستقبل تحديث من فايرستور
 let _saveDebounceTimer = null;
@@ -2549,6 +2725,8 @@ function exportBalancePdf(){
 /* ============================================================
    AUTO-SAVE (localStorage) — البيانات بتتحفظ تلقائي في المتصفح
    ============================================================ */
+let _metaReady = false;      // اتأكدنا إننا قرينا نسخة السيرفر/الكاش
+let _lastRemoteMeta = null;  // آخر نسخة معروفة من السيرفر
 const STORE_KEY = 'daftara_data_v1'; // نسخة احتياطية محلية فقط (fallback offline)
 function fullStateSnapshot(){
   return {accounts, entries, entrySeq, subAccounts, costCenters, companyInfo};
@@ -2570,12 +2748,17 @@ function saveState(){
   // حفظ محلي فوري كنسخة احتياطية لو النت اتقطع (بيشمل القيود كمان كـ fallback بس مش ده مصدر الحقيقة)
   try{ localStorage.setItem(STORE_KEY, JSON.stringify(metaSnapshot())); }catch(e){}
   if(_applyingRemoteUpdate) return; // مننضربش الداتا اللي جاية من فايرستور برجعتها تاني
+  // [إصلاح] ممنوع نكتب على السيرفر قبل ما نقرا اللي عليه (ده اللي كان بيمسح/يبوظ الداتا من جهاز جديد)
+  if(!_metaReady) return;
+  // [إصلاح] مفيش كتابة لو مفيش تغيير فعلي عن اللي على السيرفر
+  if(JSON.stringify(metaSnapshot()) === _lastRemoteMeta) return;
   // نأخر إرسال الإعدادات/الحسابات شوية (debounce) عشان مانبعتش لفايرستور مع كل حركة صغيرة
   // (القيود نفسها بتتبعت فورًا من مكانها في saveEntry/deleteEntry.. مش من هنا)
   clearTimeout(_saveDebounceTimer);
   window._metaSavePending = true;
   _saveDebounceTimer = setTimeout(()=>{
-    FIRESTORE_META.set(metaSnapshot()).then(()=>{ window._metaSavePending = false; }).catch(e=>{
+    const _snapStr = JSON.stringify(metaSnapshot());
+    FIRESTORE_META.set(metaSnapshot()).then(()=>{ window._metaSavePending = false; _lastRemoteMeta = _snapStr; }).catch(e=>{
       window._metaSavePending = false;
       console.warn('تعذر الحفظ على فايرستور', e);
       showToast('تعذر الحفظ أونلاين — تأكدي من الاتصال بالإنترنت', true);
@@ -2592,8 +2775,11 @@ function loadState(){
 function startFirestoreSync(){
   FIRESTORE_META.onSnapshot(snap=>{
     if(!snap.exists){
-      // أول مرة نفتح فيها السيستم على المشروع ده — نسجل الحالة الابتدائية
-      FIRESTORE_META.set(metaSnapshot()).catch(e=>console.warn('تعذر إنشاء المستند', e));
+      // [إصلاح] مننشئ المستند إلا لو السيرفر نفسه أكد إنه مش موجود (مش مجرد كاش فاضي)
+      if(!snap.metadata.fromCache){
+        _metaReady = true;
+        FIRESTORE_META.set(metaSnapshot()).then(()=>{ _lastRemoteMeta = JSON.stringify(metaSnapshot()); }).catch(e=>console.warn('تعذر إنشاء المستند', e));
+      }
       return;
     }
     // لو فيه تعديل محلي لسه ما اتبعتش (زي حذف حساب) منسيبش نسخة قديمة جاية من السيرفر ترجّعه
@@ -2601,6 +2787,9 @@ function startFirestoreSync(){
     if(window._metaSavePending || snap.metadata.hasPendingWrites) return;
     _applyingRemoteUpdate = true;
     applyStateSnapshot(snap.data());
+    fixEntrySeq();
+    _lastRemoteMeta = JSON.stringify(metaSnapshot());
+    _metaReady = true;
     renderAll();
     _applyingRemoteUpdate = false;
   }, err=>{
@@ -2615,12 +2804,19 @@ function startFirestoreSync(){
    مزامنة تدريجية للقيود: بنحمّل من كاش الجهاز (مجانًا) ونسأل السيرفر
    عن القيود اللي اتغيرت من آخر مزامنة بس — بدل قراءة كل القيود كل مرة
    ============================================================ */
-const LASTSYNC_KEY = 'daftara_entries_lastsync_v1';
-const SYNC_MARGIN_MS = 10*60*1000; // هامش أمان لفروق ساعة الأجهزة
+const LASTSYNC_KEY = 'daftara_entries_lastsync_v2';
+const SYNC_MARGIN_MS = 3*24*60*60*1000; // 3 أيام: يغطي فرق ساعة أي جهاز // هامش أمان لفروق ساعة الأجهزة
+// [إصلاح] نتأكد إن رقم القيد الجديد دايمًا أكبر من أي قيد موجود (عشان قيدين مايكونوش بنفس الـ id ويمسحوا بعض)
+function fixEntrySeq(){
+  let mx = 0;
+  entries.forEach(e=>{ const n = Number(e.id); if(Number.isFinite(n) && n>mx) mx = n; });
+  if(!Number.isFinite(entrySeq) || entrySeq <= mx) entrySeq = mx + 1;
+}
 function _upsertEntry(data){
   const idx = entries.findIndex(e=>String(e.id)===String(data.id));
   if(data.deleted){ if(idx>-1) entries.splice(idx,1); return; }
   if(idx>-1) entries[idx]=data; else entries.push(data);
+  fixEntrySeq();
 }
 function _saveLastSync(ms){ try{ localStorage.setItem(LASTSYNC_KEY, String(ms)); }catch(e){} }
 async function startEntriesIncrementalSync(){
@@ -2634,8 +2830,9 @@ async function startEntriesIncrementalSync(){
     if(cacheSnap && !cacheSnap.empty){
       _applyingRemoteUpdate = true;
       entries = cacheSnap.docs.map(d=>d.data()).filter(d=>!d.deleted);
-      _applyingRemoteUpdate = false;
+      fixEntrySeq();
       renderAll();
+      _applyingRemoteUpdate = false;
     } else { needFull = true; }
 
     // 2) أول مرة على الجهاز ده: تحميل كامل مرة واحدة بس
@@ -2644,10 +2841,11 @@ async function startEntriesIncrementalSync(){
         const full = await FIRESTORE_ENTRIES.get({source:'server'});
         _applyingRemoteUpdate = true;
         entries = full.docs.map(d=>d.data()).filter(d=>!d.deleted);
-        _applyingRemoteUpdate = false;
+        fixEntrySeq();
         lastSync = startedAt;
         _saveLastSync(lastSync);
         renderAll();
+        _applyingRemoteUpdate = false;
       }catch(e){
         // مفيش نت وأول مرة: هنكمل بالكاش لو موجود
         console.warn('تعذر التحميل الكامل', e);
@@ -2787,10 +2985,393 @@ document.getElementById('todayChip').textContent = new Date().toLocaleDateString
 
 loadState();
 renderAll();
-startFirestoreSync();
+
+/* ============================================================
+   تسجيل الدخول (Firebase Auth) — المزامنة مبتبدأ إلا بعد الدخول
+   الجلسة بتفضل محفوظة على الجهاز فمش هتكتب الباسورد كل مرة
+   ============================================================ */
+const auth = firebase.auth();
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+let _syncStarted = false;
+function _loginMsg(t, ok){ const m=document.getElementById('loginMsg'); m.textContent=t||''; m.className = ok?'ok':''; }
+function _authErr(e){
+  const c = e && e.code || '';
+  if(c.includes('invalid-credential')||c.includes('wrong-password')||c.includes('user-not-found')||c.includes('invalid-email')) return 'الإيميل أو كلمة المرور غير صحيحة';
+  if(c.includes('too-many-requests')) return 'محاولات كتير — استنى شوية وجرب تاني';
+  if(c.includes('network')) return 'مفيش اتصال بالإنترنت';
+  return 'تعذر تسجيل الدخول (' + c + ')';
+}
+async function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  if(!email || !pass){ _loginMsg('اكتب الإيميل وكلمة المرور'); return; }
+  const btn = document.getElementById('loginBtn'); btn.disabled = true; _loginMsg('');
+  try{ await auth.signInWithEmailAndPassword(email, pass); }
+  catch(e){ _loginMsg(_authErr(e)); }
+  btn.disabled = false;
+}
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('loginForgot').addEventListener('click', async ()=>{
+  const email = document.getElementById('loginEmail').value.trim();
+  if(!email){ _loginMsg('اكتب الإيميل الأول وبعدين اضغط نسيت كلمة المرور'); return; }
+  try{ await auth.sendPasswordResetEmail(email); _loginMsg('اتبعتلك رسالة على الإيميل لتغيير كلمة المرور', true); }
+  catch(e){ _loginMsg(_authErr(e)); }
+});
+document.getElementById('logoutChip').addEventListener('click', ()=>{
+  if(confirm('تسجيل الخروج من الجهاز ده؟')) auth.signOut().then(()=>location.reload());
+});
+auth.onAuthStateChanged(user=>{
+  const ov = document.getElementById('loginOverlay');
+  if(user){
+    ov.classList.add('hidden');
+    if(!_syncStarted){ _syncStarted = true; startFirestoreSync(); }
+  } else {
+    ov.classList.remove('hidden');
+  }
+});
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW',e)));
 }
+</script>
+<script>
+/* ============================================================
+   إيصال استلام — تسجيل + معاينة + طباعة PDF (1 / 2 / 3 في الورقة A4)
+   ============================================================ */
+const RC_KEY = 'dafatra_receipts_v1';
+const RC_ICON_BUILDING = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect x="12" y="6" width="22" height="38" rx="2" fill="#7f8fc9"/><rect x="26" y="14" width="14" height="30" rx="2" fill="#aab6e0"/><g fill="#eef1fb"><rect x="16" y="11" width="4" height="4"/><rect x="23" y="11" width="4" height="4"/><rect x="16" y="19" width="4" height="4"/><rect x="23" y="19" width="4" height="4"/><rect x="16" y="27" width="4" height="4"/><rect x="23" y="27" width="4" height="4"/><rect x="30" y="20" width="4" height="4"/><rect x="30" y="28" width="4" height="4"/></g><rect x="19" y="36" width="8" height="8" fill="#5b6aa8"/></svg>');
+const RC_ICON_BRICKS = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect x="4" y="6" width="40" height="36" rx="5" fill="#ee6a2c"/><g stroke="#fff" stroke-width="2.2" fill="none"><path d="M4 18h40M4 30h40"/><path d="M24 6v12M14 18v12M34 18v12M24 30v12"/></g></svg>');
+const RC_BRAND_DEFAULT = {name:'', en:'FIRST DS CONTRACTING', main:'#0B1F44', acc:'#C2570C', logo1:null, logo2:null, stamp:null};
+
+let rcStore = {seq:1, per:3, brand:Object.assign({}, RC_BRAND_DEFAULT), list:[]};
+let rcCur = null;
+let rcSelected = new Set();
+
+function rcPersist(){ try{ localStorage.setItem(RC_KEY, JSON.stringify(rcStore)); }catch(e){ showToast('مساحة التخزين المحلية ممتلئة — قلّل حجم الشعارات', true); } }
+function rcLoad(){
+  try{
+    const d = JSON.parse(localStorage.getItem(RC_KEY) || 'null');
+    if(d && typeof d === 'object'){
+      rcStore.seq = Number.isFinite(d.seq) ? d.seq : 1;
+      rcStore.per = [1,2,3].includes(d.per) ? d.per : 3;
+      rcStore.brand = Object.assign({}, RC_BRAND_DEFAULT, d.brand || {});
+      rcStore.list = Array.isArray(d.list) ? d.list : [];
+    }
+  }catch(e){}
+}
+function rcPad(n){ return String(n).padStart(4,'0'); }
+function rcToday(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function rcDateFmt(s){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s||''); return m ? (m[3]+' / '+m[2]+' / '+m[1]) : (s||''); }
+
+/* ---------- كتابة المبلغ بالحروف (جنيه مصري) ---------- */
+const RC_ONES = ['','واحد','اثنان','ثلاثة','أربعة','خمسة','ستة','سبعة','ثمانية','تسعة','عشرة','أحد عشر','اثنا عشر','ثلاثة عشر','أربعة عشر','خمسة عشر','ستة عشر','سبعة عشر','ثمانية عشر','تسعة عشر'];
+const RC_TENS = ['','','عشرون','ثلاثون','أربعون','خمسون','ستون','سبعون','ثمانون','تسعون'];
+const RC_HUND = ['','مائة','مائتان','ثلاثمائة','أربعمائة','خمسمائة','ستمائة','سبعمائة','ثمانمائة','تسعمائة'];
+function rcBelow1000(n){
+  const parts = [], h = Math.floor(n/100), r = n % 100;
+  if(h) parts.push(RC_HUND[h]);
+  if(r){
+    if(r < 20) parts.push(RC_ONES[r]);
+    else { const u = r % 10, t = Math.floor(r/10); parts.push(u ? (RC_ONES[u] + ' و' + RC_TENS[t]) : RC_TENS[t]); }
+  }
+  return parts.join(' و');
+}
+function rcScaleWord(n, one, two, few, many){
+  if(n === 1) return one;
+  if(n === 2) return two;
+  if(n >= 3 && n <= 10) return rcBelow1000(n) + ' ' + few;
+  return rcBelow1000(n) + ' ' + many;
+}
+function rcIntWords(n){
+  if(n === 0) return 'صفر';
+  const parts = [];
+  const bil = Math.floor(n/1e9), mil = Math.floor((n%1e9)/1e6), th = Math.floor((n%1e6)/1e3), rest = n % 1e3;
+  if(bil) parts.push(rcScaleWord(bil,'مليار','ملياران','مليارات','مليار'));
+  if(mil) parts.push(rcScaleWord(mil,'مليون','مليونان','ملايين','مليون'));
+  if(th)  parts.push(rcScaleWord(th,'ألف','ألفان','آلاف','ألف'));
+  if(rest) parts.push(rcBelow1000(rest));
+  return parts.join(' و');
+}
+function rcTafqeet(amount){
+  const a = Math.round((Number(amount) + Number.EPSILON) * 100) / 100;
+  if(!isFinite(a) || a <= 0) return '';
+  const pounds = Math.floor(a), pi = Math.round((a - pounds) * 100);
+  let t = 'فقط ';
+  if(pounds) t += rcIntWords(pounds) + ' جنيهاً مصرياً';
+  if(pi) t += (pounds ? ' و' : '') + rcIntWords(pi) + ' قرشاً';
+  return t + ' لا غير';
+}
+
+/* ---------- حالة الإيصال الحالي ---------- */
+function rcBlank(){
+  return {id:null, no:rcPad(rcStore.seq), date:rcToday(), title:'إيصال استلام نقدية', name:'', amount:'', words:'', wordsManual:false,
+          amountManual:false, reason:'', cur:'ج.م', showTable:true, rows:[{cat:'', qty:''}]};
+}
+function rcNew(){ rcCur = rcBlank(); rcFillForm(); rcRenderRows(); rcRenderPreview(); }
+function rcRowTotal(r){ return (parseFloat(r.cat)||0) * (parseFloat(r.qty)||0); }
+function rcTableTotal(c){ return c.rows.reduce((s,r)=> s + rcRowTotal(r), 0); }
+
+function rcFillForm(){
+  const c = rcCur, g = id => document.getElementById(id);
+  g('rcNo').value = c.no; g('rcDate').value = c.date; g('rcTitle').value = c.title; g('rcName').value = c.name;
+  g('rcAmount').value = c.amount; g('rcCur').value = c.cur; g('rcWords').value = c.words; g('rcReason').value = c.reason;
+  g('rcShowTable').checked = !!c.showTable;
+}
+function rcSet(k, v){ rcCur[k] = v; rcRenderPreview(); }
+function rcAmountInput(v){ rcCur.amount = v; rcCur.amountManual = true; rcSyncWords(); rcRenderPreview(); }
+function rcWordsInput(v){ rcCur.words = v; rcCur.wordsManual = true; rcRenderPreview(); }
+function rcAutoWords(){ rcCur.wordsManual = false; rcSyncWords(); rcRenderPreview(); }
+function rcSyncWords(){
+  if(!rcCur.wordsManual){ rcCur.words = rcTafqeet(rcCur.amount); document.getElementById('rcWords').value = rcCur.words; }
+}
+function rcSyncAmountFromTable(){
+  if(rcCur.showTable && !rcCur.amountManual){
+    const t = rcTableTotal(rcCur);
+    rcCur.amount = t > 0 ? String(Math.round(t*100)/100) : '';
+    document.getElementById('rcAmount').value = rcCur.amount;
+    rcSyncWords();
+  }
+}
+
+/* ---------- جدول الفئات ---------- */
+function rcRenderRows(){
+  const box = document.getElementById('rcTableBox');
+  box.style.display = rcCur.showTable ? '' : 'none';
+  const tb = document.getElementById('rcRowsBody');
+  tb.innerHTML = rcCur.rows.map((r,i)=>`
+    <tr>
+      <td><input type="number" step="any" min="0" value="${escHtml(r.cat)}" oninput="rcRowSet(${i},'cat',this.value)" placeholder="الفئة"></td>
+      <td><input type="number" step="any" min="0" value="${escHtml(r.qty)}" oninput="rcRowSet(${i},'qty',this.value)" placeholder="العدد"></td>
+      <td class="num" id="rcRowTot${i}" style="font-weight:700;">${fmt(rcRowTotal(r))}</td>
+      <td><button class="rm-line" type="button" onclick="rcDelRow(${i})" title="حذف السطر">×</button></td>
+    </tr>`).join('');
+}
+function rcRowSet(i, k, v){
+  rcCur.rows[i][k] = v;
+  const cell = document.getElementById('rcRowTot'+i); if(cell) cell.textContent = fmt(rcRowTotal(rcCur.rows[i]));
+  rcSyncAmountFromTable(); rcRenderPreview();
+}
+function rcAddRow(){ rcCur.rows.push({cat:'', qty:''}); rcRenderRows(); }
+function rcDelRow(i){
+  rcCur.rows.splice(i,1); if(!rcCur.rows.length) rcCur.rows.push({cat:'', qty:''});
+  rcRenderRows(); rcSyncAmountFromTable(); rcRenderPreview();
+}
+
+/* ---------- الشعارات واسم الشركة ---------- */
+function rcBrandSet(k, v){ rcStore.brand[k] = v; rcPersist(); rcRenderPreview(); }
+function rcCompress(file, max, cb){
+  const fr = new FileReader();
+  fr.onload = ()=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(img.width*s); cv.height = Math.round(img.height*s);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      cb(cv.toDataURL('image/png'));
+    };
+    img.onerror = ()=> showToast('تعذر قراءة الصورة', true);
+    img.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+function rcLogoPick(key, inp){
+  const f = inp.files && inp.files[0]; if(!f) return;
+  rcCompress(f, 360, d=>{ rcStore.brand[key] = d; rcPersist(); rcRenderBrandForm(); rcRenderPreview(); inp.value=''; });
+}
+function rcLogoClear(key){ rcStore.brand[key] = 'none'; rcPersist(); rcRenderBrandForm(); rcRenderPreview(); }
+function rcLogoReset(key){ rcStore.brand[key] = null; rcPersist(); rcRenderBrandForm(); rcRenderPreview(); }
+function rcLogoSrc(b, key){
+  const v = b[key];
+  if(v === 'none') return '';
+  if(v) return v;
+  if(key === 'logo1') return RC_ICON_BUILDING;
+  if(key === 'logo2') return RC_ICON_BRICKS;
+  return '';
+}
+function rcRenderBrandForm(){
+  const b = rcStore.brand, g = id => document.getElementById(id);
+  if(g('rcBName') !== document.activeElement) g('rcBName').value = b.name || '';
+  if(g('rcBEn') !== document.activeElement) g('rcBEn').value = b.en || '';
+  g('rcBMain').value = b.main; g('rcBAcc').value = b.acc;
+  [['logo1','rcPrevLogo1'],['logo2','rcPrevLogo2'],['stamp','rcPrevStamp']].forEach(([k,id])=>{
+    const el = g(id), s = rcLogoSrc(b,k);
+    if(s){ el.src = s; el.style.visibility = 'visible'; } else { el.removeAttribute('src'); el.style.visibility = 'hidden'; }
+  });
+}
+
+/* ---------- شكل الإيصال (HTML + CSS) ---------- */
+const RC_CSS = `
+.rc{ --main:#0B1F44; --acc:#C2570C; --gold:#A8802F; font-family:'Cairo','IBM Plex Sans Arabic',Tahoma,sans-serif; color:var(--main);
+  box-sizing:border-box; background:#FFFEFA; border:.38em solid var(--main); border-radius:1.5em; padding:.42em; direction:rtl; position:relative;
+  -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.rc *{ box-sizing:border-box; }
+.rc.l1{ font-size:15px; width:190mm; height:126mm; }
+.rc.l3{ font-size:10.8px; width:190mm; height:89mm; }
+.rc-in{ height:100%; border:.1em solid var(--main); border-radius:1.15em; padding:1.1em 2.4em 1em; display:flex; flex-direction:column; }
+.rc-hd{ display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:.7em; border-bottom:.24em solid var(--acc); }
+.rc-co{ font-weight:800; font-size:2.05em; line-height:1.15; }
+.rc-en{ font-weight:700; font-size:.78em; letter-spacing:.2em; margin-top:.25em; direction:ltr; text-align:right; }
+.rc-logos{ display:flex; gap:.6em; align-items:center; margin-top:.2em; }
+.rc-logos img{ height:2.1em; width:2.1em; object-fit:contain; }
+.rc-title{ align-self:center; margin:.8em 0 .55em; border:.13em solid var(--main); border-radius:2em; padding:.12em 1.7em; font-weight:800; font-size:1.2em; background:#fff; }
+.rc-r{ display:flex; align-items:baseline; gap:.5em; font-weight:700; font-size:1.12em; }
+.rc-r .lb{ white-space:nowrap; }
+.rc-r .v{ font-weight:800; }
+.rc-sp{ display:flex; justify-content:space-between; font-weight:700; font-size:1.1em; margin-bottom:.45em; }
+.rc-line{ flex:1; border-bottom:.1em solid var(--main); min-height:1.45em; padding:0 .3em .05em; }
+.rc-ln-full{ border-bottom:.1em solid var(--main); padding-bottom:.08em; margin-bottom:.5em; }
+.rc-amt{ display:flex; align-items:center; gap:.5em; margin:.2em 0 .55em; }
+.rc-amt .lb{ font-weight:700; font-size:1.12em; white-space:nowrap; }
+.rc-amt .words{ flex:1; border-bottom:.1em solid var(--main); font-weight:700; font-size:1em; min-height:1.5em; padding:0 .3em .1em; }
+.rc-box{ background:var(--main); color:#fff; font-weight:800; font-size:1.05em; border-radius:.55em; padding:.5em 1em; white-space:nowrap; direction:rtl; min-width:6.4em; text-align:center; }
+.rc-bt{ display:flex; justify-content:space-between; align-items:flex-end; margin-top:auto; gap:1em; }
+.rc-tbl{ border-collapse:collapse; width:100%; font-size:.8em; font-weight:700; text-align:center; }
+.rc-tbl th{ background:var(--main); color:#fff; border:.08em solid var(--main); padding:.35em .4em; }
+.rc-tbl td{ border:.08em solid var(--gold); padding:.35em .4em; background:#fff; direction:ltr; }
+.rc-tbl tr.tot td{ border-top:.2em double var(--gold); direction:rtl; }
+.rc-tbl tr.tot td.n{ direction:ltr; }
+.rc-sig{ font-weight:700; font-size:1.05em; width:38%; }
+.rc-sig div{ border-bottom:.1em solid var(--main); height:3.2em; }
+.rc-sig span{ display:block; margin-bottom:.4em; }
+.rc-stamp{ height:4.6em; width:4.6em; object-fit:contain; }
+.rc-mid{ display:flex; justify-content:space-between; align-items:flex-end; gap:1em; margin-top:.3em; }
+.rc-left{ display:flex; flex-direction:column; align-items:flex-start; gap:.5em; width:46%; }
+`;
+function rcReceiptHtml(c, b, cls){
+  const total = rcTableTotal(c);
+  const amtNum = parseFloat(c.amount);
+  const amtTxt = isFinite(amtNum) ? fmt(amtNum) : '';
+  const l1 = rcLogoSrc(b,'logo1'), l2 = rcLogoSrc(b,'logo2'), st = rcLogoSrc(b,'stamp');
+  const rows = (c.rows||[]).filter(r => (parseFloat(r.cat)||0) || (parseFloat(r.qty)||0));
+  const tbl = (c.showTable && rows.length) ? `
+    <table class="rc-tbl">
+      <thead><tr><th>الفئة</th><th>العدد</th><th>الإجمالي</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr><td>${escHtml(fmt(parseFloat(r.cat)||0).replace(/\.00$/,''))}</td><td>${escHtml(String(parseFloat(r.qty)||0))}</td><td>${fmt(rcRowTotal(r))}</td></tr>`).join('')}
+        <tr class="tot"><td colspan="2">الإجمالي</td><td class="n">${fmt(total)}</td></tr>
+      </tbody>
+    </table>` : '<div></div>';
+  return `<div class="rc ${cls}" style="--main:${escHtml(b.main)};--acc:${escHtml(b.acc)}"><div class="rc-in">
+    <div class="rc-hd">
+      <div><div class="rc-co">${escHtml(b.name||'')}</div>${b.en?`<div class="rc-en">— ${escHtml(b.en)} —</div>`:''}</div>
+      <div class="rc-logos">${l2?`<img src="${l2}" alt="">`:''}${l1?`<img src="${l1}" alt="">`:''}</div>
+    </div>
+    <div class="rc-title">${escHtml(c.title||'')}</div>
+    <div class="rc-sp"><div>رقم الإيصال : <span class="v">${escHtml(c.no||'')}</span></div><div>التاريخ : <span class="v" dir="ltr">${escHtml(rcDateFmt(c.date))}</span></div></div>
+    <div class="rc-r"><span class="lb">استلمت أنا /</span><span class="v">${escHtml(c.name||'')}</span></div>
+    <div class="rc-ln-full"></div>
+    <div class="rc-amt"><span class="lb">المبلغ وقدره :</span><span class="words">${escHtml(c.words||'')}</span><span class="rc-box">${amtTxt?'<span dir="ltr">'+escHtml(amtTxt)+'</span> <span>'+escHtml(c.cur||'')+'</span>':'&nbsp;'}</span></div>
+    <div class="rc-r"><span class="lb">وذلك عن:</span><span class="rc-line v">${escHtml(c.reason||'')}</span></div>
+    <div class="rc-bt">
+      <div class="rc-left">${tbl}<img class="rc-stamp" ${st?`src="${st}"`:'style="visibility:hidden"'} alt=""></div>
+      <div class="rc-sig"><span>توقيع المستلم</span><div></div></div>
+    </div>
+  </div></div>`;
+}
+function rcInjectCss(){
+  if(document.getElementById('rcStyle')) return;
+  const s = document.createElement('style'); s.id = 'rcStyle'; s.textContent = RC_CSS; document.head.appendChild(s);
+  const l = document.createElement('link'); l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&display=swap'; document.head.appendChild(l);
+}
+function rcRenderPreview(){
+  const el = document.getElementById('rcPreview'); if(!el || !rcCur) return;
+  el.innerHTML = rcReceiptHtml(rcCur, rcStore.brand, 'l1');
+}
+
+/* ---------- القائمة المحفوظة ---------- */
+function rcSave(){
+  const c = rcCur;
+  if(!(c.name||'').trim() && !(parseFloat(c.amount) > 0)){ showToast('اكتب اسم المستلم أو المبلغ الأول', true); return; }
+  const snap = JSON.parse(JSON.stringify(c));
+  snap.brand = JSON.parse(JSON.stringify(rcStore.brand));
+  if(c.id){
+    const i = rcStore.list.findIndex(x=>x.id===c.id);
+    if(i >= 0) rcStore.list[i] = snap; else rcStore.list.push(snap);
+  } else {
+    snap.id = 'rc' + Date.now() + Math.floor(Math.random()*1000);
+    rcStore.list.push(snap);
+    const n = parseInt(c.no, 10);
+    rcStore.seq = Math.max(rcStore.seq, isFinite(n) ? n + 1 : rcStore.seq + 1);
+  }
+  rcPersist(); rcRenderList(); showToast('تمت إضافة الإيصال للقائمة');
+  rcCur = rcBlank(); rcFillForm(); rcRenderRows(); rcRenderPreview();
+}
+function rcEdit(id){
+  const r = rcStore.list.find(x=>x.id===id); if(!r) return;
+  rcCur = JSON.parse(JSON.stringify(r)); delete rcCur.brand;
+  rcFillForm(); rcRenderRows(); rcRenderPreview();
+  window.scrollTo({top:0, behavior:'smooth'});
+  showToast('تم تحميل الإيصال للتعديل — اضغط "إضافة للقائمة" لحفظ التعديل');
+}
+function rcDelete(id){
+  if(!confirm('حذف الإيصال ده؟')) return;
+  rcStore.list = rcStore.list.filter(x=>x.id!==id); rcSelected.delete(id); rcPersist(); rcRenderList();
+}
+function rcToggleSel(id, on){ on ? rcSelected.add(id) : rcSelected.delete(id); }
+function rcSelectAll(on){ rcSelected = on ? new Set(rcStore.list.map(r=>r.id)) : new Set(); rcRenderList(); }
+function rcPerChange(v){ rcStore.per = parseInt(v,10) || 3; rcPersist(); }
+function rcRenderList(){
+  const tb = document.getElementById('rcListBody');
+  document.getElementById('rcCount').textContent = rcStore.list.length ? '(' + rcStore.list.length + ')' : '';
+  document.getElementById('rcPer').value = String(rcStore.per);
+  if(!rcStore.list.length){ tb.innerHTML = '<tr><td colspan="7"><div class="empty-state">مفيش إيصالات محفوظة لسه — املأ البيانات واضغط "إضافة للقائمة"</div></td></tr>'; return; }
+  tb.innerHTML = rcStore.list.slice().reverse().map(r=>`
+    <tr>
+      <td><input type="checkbox" ${rcSelected.has(r.id)?'checked':''} onchange="rcToggleSel('${r.id}',this.checked)"></td>
+      <td class="num">${escHtml(r.no)}</td>
+      <td class="num date-col">${escHtml(rcDateFmt(r.date))}</td>
+      <td>${escHtml(r.name||'—')}</td>
+      <td>${escHtml(r.reason||'—')}</td>
+      <td class="num amt-num">${r.amount!==''&&isFinite(parseFloat(r.amount))?fmt(parseFloat(r.amount)):'—'}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn-edit-text" onclick="rcPrintOne('${r.id}')">طباعة</button>
+        <button class="btn-edit-text" onclick="rcEdit('${r.id}')">تعديل</button>
+        <button class="btn btn-danger-text" onclick="rcDelete('${r.id}')">حذف</button>
+      </td>
+    </tr>`).join('');
+  document.getElementById('rcSelAll').checked = rcSelected.size === rcStore.list.length;
+}
+
+/* ---------- الطباعة ---------- */
+function rcBuildDoc(items, per){
+  const cls = per === 3 ? 'l3' : 'l1';
+  const pages = [];
+  for(let i=0; i<items.length; i+=per) pages.push(items.slice(i, i+per));
+  const body = pages.map(p => `<div class="sheet">${p.map(r => rcReceiptHtml(r, r.brand || rcStore.brand, cls)).join('')}</div>`).join('');
+  return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>إيصالات استلام</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+@page{ size:A4; margin:8mm; }
+html,body{ margin:0; padding:0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.sheet{ width:194mm; height:280mm; display:flex; flex-direction:column; align-items:center; justify-content:${per===3?'space-between':'flex-start'}; gap:${per===2?'6mm':'0'}; page-break-after:always; break-after:page; overflow:hidden; }
+.sheet:last-child{ page-break-after:auto; break-after:auto; }
+${RC_CSS}
+</style></head><body>${body}</body></html>`;
+}
+function rcPrintItems(items){
+  if(!items.length){ showToast('مفيش إيصالات للطباعة', true); return; }
+  openPrintWindow(rcBuildDoc(items, rcStore.per), 'rcPrint');
+}
+function rcPrintCurrent(){
+  const snap = JSON.parse(JSON.stringify(rcCur)); snap.brand = JSON.parse(JSON.stringify(rcStore.brand));
+  rcPrintItems([snap]);
+}
+function rcPrintOne(id){ const r = rcStore.list.find(x=>x.id===id); if(r) rcPrintItems([r]); }
+function rcPrintSelected(){
+  const items = rcStore.list.filter(r => rcSelected.has(r.id));
+  if(!items.length){ showToast('حدد إيصال واحد على الأقل من القائمة', true); return; }
+  rcPrintItems(items);
+}
+
+/* ---------- تشغيل ---------- */
+function rcInit(){
+  rcLoad(); rcInjectCss();
+  if(!rcStore.brand.name && typeof companyInfo !== 'undefined' && companyInfo.name) rcStore.brand.name = companyInfo.name;
+  rcRenderBrandForm(); rcNew(); rcRenderList();
+}
+rcInit();
+
 </script>
 </body>
 </html>
