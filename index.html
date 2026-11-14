@@ -684,7 +684,7 @@
           <div class="fn-card">
             <h3>مقارنة الجرد برصيد الخزنة</h3>
             <div class="hint">الرصيد بيتسحب تلقائي من القيود اليومية</div>
-            <div class="field" style="margin-bottom:12px;"><label>حساب الخزنة</label><select id="fnAcc" class="rc-per" style="width:100%; padding:9px 10px;" onchange="fnPickAcc(this.value)"></select></div>
+            <div class="field" style="margin-bottom:12px;"><label>الحساب المُقارَن (khaznat eldeep)</label><select id="fnAcc" class="rc-per" style="width:100%; padding:9px 10px;" onchange="fnPickAcc(this.value)"></select></div>
             <div class="field" style="margin-bottom:12px;"><label>الرصيد حتى تاريخ (اختياري)</label><input type="date" id="fnDate" oninput="renderFinance()"></div>
             <div class="fn-two">
               <div class="fn-box"><div class="l">رصيد الخزنة حسب القيود</div><div class="v" id="fnBook">0.00</div><div class="s" id="fnBookSub">—</div></div>
@@ -4037,23 +4037,36 @@ function fnPersist(){ try{ localStorage.setItem(FN_KEY, JSON.stringify(fnStore))
 function fnCounted(){ return FN_DENOMS.reduce((s,d)=> s + d.v * (parseInt(fnStore.counts[d.v],10)||0), 0); }
 function fnNotes(){ return FN_DENOMS.reduce((s,d)=> s + (parseInt(fnStore.counts[d.v],10)||0), 0); }
 
+function fnKey(x){ return String(x||'').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]/g,''); }
 function fnAutoAccount(){
-  const sub = accounts.filter(a=>a.postable);
-  const t = s => normAr(s);
-  return sub.find(a=> t(a.name).includes(t('خزنة الديب')) || /khaznat|eldeep/i.test(a.name+' '+a.code))
-      || sub.find(a=> t(a.name).includes(t('خزنة')) || t(a.name).includes(t('خزينة'))) || null;
+  const all = accounts.slice();
+  const post = a => a.postable ? 0 : 1;               // نفضّل الحساب اللي عليه حركات
+  const pick = fn => all.filter(fn).sort((a,b)=> post(a)-post(b) || a.code.localeCompare(b.code))[0] || null;
+  const ar = normAr('خزنة الديب').replace(/\s+/g,'');
+  return pick(a=> fnKey(a.name) === 'khaznateldeep')                                // الاسم مطابق تمامًا
+      || pick(a=> fnKey(a.name).includes('khaznateldeep'))
+      || pick(a=> fnKey(a.name).includes('khaznat') && fnKey(a.name).includes('eldeep'))
+      || pick(a=> normAr(a.name).replace(/\s+/g,'') === ar || normAr(a.name).replace(/\s+/g,'').includes(ar))
+      || null;
 }
 function fnAccount(){
-  if(fnStore.acc){ const a = accounts.find(x=>x.code===fnStore.acc && x.postable); if(a) return a; }
+  if(fnStore.acc){ const a = accounts.find(x=>x.code===fnStore.acc); if(a) return a; }
   return fnAutoAccount();
 }
+function fnDescendants(code){
+  const out = [code], stack = [code];
+  while(stack.length){ const c = stack.pop(); accounts.forEach(a=>{ if(a.parentCode===c && !out.includes(a.code)){ out.push(a.code); stack.push(a.code); } }); }
+  return out;
+}
 function fnBookBalance(a, upTo){
-  let b = 0, n = 0, last = '';
+  const codes = new Set(fnDescendants(a.code));
+  let deb = 0, cred = 0, n = 0, last = '';
   entries.forEach(e=>{
     if(upTo && e.date > upTo) return;
-    (e.lines||[]).forEach(l=>{ if(l.code===a.code){ b += (l.debit||0) - (l.credit||0); n++; if(e.date > last) last = e.date; } });
+    (e.lines||[]).forEach(l=>{ if(codes.has(l.code)){ deb += l.debit||0; cred += l.credit||0; n++; if(e.date > last) last = e.date; } });
   });
-  return {bal: (a.type==='asset'||a.type==='expense') ? b : -b, n, last};
+  const b = deb - cred;
+  return {bal: (a.type==='asset'||a.type==='expense') ? b : -b, n, last, deb, cred};
 }
 function fnPickAcc(code){ fnStore.acc = code; fnPersist(); renderFinance(); }
 function fnSet(v, val){ fnStore.counts[v] = val; fnPersist(); fnUpdateTotals(); renderFinance(true); }
@@ -4094,7 +4107,8 @@ function renderFinance(keepInputs){
   fnUpdateTotals();
   const sel = document.getElementById('fnAcc'), acc = fnAccount();
   if(!keepInputs){
-    const opts = accounts.filter(a=>a.postable).sort((a,b)=>a.code.localeCompare(b.code));
+    const auto = fnAutoAccount();
+    const opts = accounts.filter(a=>a.postable || (auto && a.code===auto.code)).sort((a,b)=> ((auto&&b.code===auto.code)?1:0) - ((auto&&a.code===auto.code)?1:0) || a.code.localeCompare(b.code));
     sel.innerHTML = opts.length ? opts.map(a=>`<option value="${a.code}" ${acc&&acc.code===a.code?'selected':''}>${escHtml(a.code)} — ${escHtml(a.name)}</option>`).join('') : '<option value="">مفيش حسابات</option>';
   }
   const counted = fnCounted(); document.getElementById('fnCount').textContent = fmt(counted);
@@ -4106,7 +4120,7 @@ function renderFinance(keepInputs){
   }
   const bk = fnBookBalance(acc, document.getElementById('fnDate').value);
   document.getElementById('fnBook').textContent = fmt(bk.bal);
-  document.getElementById('fnBookSub').textContent = acc.name + ' · ' + bk.n + ' حركة' + (bk.last ? ' · آخر حركة ' + bk.last.split('-').reverse().join('/') : '');
+  document.getElementById('fnBookSub').textContent = acc.name + ' · مدين ' + fmt(bk.deb) + ' − دائن ' + fmt(bk.cred) + ' · ' + bk.n + ' حركة';
   const diff = Math.round((counted - bk.bal) * 100) / 100;
   const started = counted > 0 || fnNotes() > 0;
   let state, html;
