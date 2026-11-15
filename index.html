@@ -489,6 +489,10 @@
   .fn-verdict .am{ margin-inline-start:auto; font-family:'IBM Plex Mono'; direction:ltr; }
   .fn-scale{ display:flex; justify-content:center; margin:6px 0 0; }
   .fn-snap-wrap{ margin-top:16px; }
+  .db-sel{ background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.3); color:#fff; border-radius:9px; padding:6px 10px; font:inherit; font-size:12.5px; max-width:260px; }
+  .db-sel option{ color:#1d2b2a; }
+  .db-chip.print{ background:#AD7F35; border-color:#AD7F35; margin-inline-start:auto; }
+  .db-chip.print:hover{ background:#c3923f; }
 </style>
 </head>
 <body>
@@ -585,7 +589,15 @@
             <div class="db-net-label" id="dbNetLabel">صافي الربح</div>
             <div class="db-net" id="dbNet">0.00</div>
             <div style="margin-top:8px;"><span class="db-margin" id="dbMargin">هامش الربح —</span></div>
-            <div class="db-range" id="dbRange">
+            <div class="db-range" id="dbScopeBar" style="margin-top:14px;">
+              <span style="font-size:12px; opacity:.75;">التقرير:</span>
+              <button class="db-chip" data-k="all">الشركة كلها</button>
+              <button class="db-chip" data-k="cc">مركز تكلفة</button>
+              <button class="db-chip" data-k="main">حساب رئيسي</button>
+              <select class="db-sel" id="dbScopeSel" style="display:none;"></select>
+              <button class="db-chip print" id="dbPrint">🖨 طباعة PDF</button>
+            </div>
+            <div class="db-range" id="dbRange" style="margin-top:10px;">
               <button class="db-chip" data-r="all">الكل</button>
               <button class="db-chip" data-r="year">هذه السنة</button>
               <button class="db-chip" data-r="90">آخر 90 يوم</button>
@@ -598,6 +610,7 @@
         </div>
       </div>
 
+      <div id="dbGeneral">
       <div class="db-kpis" id="dbKpis"></div>
 
       <div class="db-row r-2-1">
@@ -654,10 +667,12 @@
       </div>
 
       <div class="db-row r-3">
-        <div class="db-card"><h3>الفروع</h3><div class="hint">حجم الحركة على كل فرعي</div><div id="dbSubs"></div></div>
+        <div class="db-card"><h3>الفرعي</h3><div class="hint">حجم الحركة على كل فرعي</div><div id="dbSubs"></div></div>
         <div class="db-card"><h3>مراكز التكلفة</h3><div class="hint">حجم الحركة على كل مركز</div><div id="dbCCs"></div></div>
         <div class="db-card"><h3>آخر القيود</h3><div class="hint">آخر ما اتسجل في النظام</div><div class="db-tl" id="dbRecent"></div></div>
       </div>
+      </div>
+      <div id="dbScoped" style="display:none"></div>
     </section>
     <div id="dbTip"></div>
 
@@ -830,7 +845,7 @@
       <div class="page-head">
         <div>
           <h1>دفتر الأستاذ</h1>
-          <p>اختر حسابًا لعرض كل حركاته والرصيد المتحرك</p>
+          <p>اختر حسابًا فرعيًا أو رئيسيًا لعرض كشف حسابه والرصيد المتحرك (الرئيسي بيجمّع حركة كل الحسابات اللي تحته)</p>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
           <div class="combo combo-inline" id="ledgerAccountCombo">
@@ -2390,6 +2405,26 @@ function renderJournal(){
 /* ============================================================
    COMPUTATION HELPERS
    ============================================================ */
+function accountCodesUnder(code){
+  const out=[code], st=[code];
+  while(st.length){ const c=st.pop(); accounts.forEach(a=>{ if(a.parentCode===c && !out.includes(a.code)){ out.push(a.code); st.push(a.code); } }); }
+  return out;
+}
+// حسابات دفتر الأستاذ: الفرعية اللي عليها حركة + الرئيسية اللي تحتها حركة
+function ledgerAccountOptions(){
+  const used = new Set(accountsWithMovement().map(a=>a.code));
+  const mains = accounts.filter(a=>!a.postable && accountCodesUnder(a.code).some(c=>used.has(c)));
+  return mains.concat(accountsWithMovement()).sort((x,y)=>x.code.localeCompare(y.code));
+}
+function ledgerRowsFor(acc){
+  const codes = new Set(accountCodesUnder(acc.code)), main = !acc.postable, rows = [];
+  entries.forEach(e=> e.lines.forEach(l=>{ if(codes.has(l.code)){
+    const la = accounts.find(a=>a.code===l.code);
+    rows.push({date:e.date, no:e.no, desc: main && la ? (e.desc + ' — ' + la.name) : e.desc, debit:l.debit, credit:l.credit});
+  }}));
+  rows.sort((a,b)=> a.date.localeCompare(b.date));
+  return rows;
+}
 function accountFlows(code){
   let debit=0, credit=0;
   entries.forEach(e=> e.lines.forEach(l=>{ if(l.code===code){ debit+=l.debit; credit+=l.credit; } }));
@@ -2429,7 +2464,7 @@ function initLedgerAccountCombo(){
   let items = [], active = 0;
   const label = it => it.code + ' — ' + it.name;
   function filter(){
-    const q = normAr(inp.value), all = accountsWithMovement();
+    const q = normAr(inp.value), all = ledgerAccountOptions();
     if(!q) return all.slice();
     const pre = [], mid = [];
     all.forEach(it=>{
@@ -2453,7 +2488,7 @@ function initLedgerAccountCombo(){
     hid.value = it.code; inp.value = label(it); box.classList.remove('open');
     renderLedger();
   }
-  box._set = code=>{ const it = accountsWithMovement().find(x=>x.code===code); if(it){ hid.value = it.code; inp.value = label(it); } };
+  box._set = code=>{ const it = ledgerAccountOptions().find(x=>x.code===code); if(it){ hid.value = it.code; inp.value = label(it); } };
   inp.addEventListener('focus', ()=>{ inp.select(); draw(); });
   inp.addEventListener('input', ()=>{ draw(); });
   inp.addEventListener('keydown', ev=>{
@@ -2468,7 +2503,7 @@ function initLedgerAccountCombo(){
   });
   inp.addEventListener('blur', ()=>{
     box.classList.remove('open');
-    const it = accountsWithMovement().find(x=>x.code===hid.value);
+    const it = ledgerAccountOptions().find(x=>x.code===hid.value);
     inp.value = it ? label(it) : '';
   });
   document.addEventListener('mousedown', ev=>{ if(!box.contains(ev.target)) box.classList.remove('open'); });
@@ -2477,7 +2512,7 @@ function populateLedgerSelect(){
   initLedgerAccountCombo();
   const hid = document.getElementById('ledgerAccountSelect');
   const box = document.getElementById('ledgerAccountCombo');
-  const accs = accountsWithMovement();
+  const accs = ledgerAccountOptions();
   let current = hid.value;
   if(!current || !accs.some(a=>a.code===current)) current = accs.length ? accs[0].code : '';
   hid.value = current;
@@ -2492,9 +2527,7 @@ function renderLedger(){
   tbody.innerHTML = '';
   if(!acc){ kpis.innerHTML=''; tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state">لا توجد حسابات عليها قيود حتى الآن</div></td></tr>`; return; }
 
-  const rows = [];
-  entries.forEach(e=> e.lines.forEach(l=>{ if(l.code===code) rows.push({date:e.date, no:e.no, desc:e.desc, debit:l.debit, credit:l.credit}); }));
-  rows.sort((a,b)=> a.date.localeCompare(b.date));
+  const rows = ledgerRowsFor(acc);
 
   const increases = (acc.type==='asset'||acc.type==='expense');
   let running = 0, totalD=0, totalC=0;
@@ -2609,9 +2642,7 @@ function getLedgerData(){
   const code = document.getElementById('ledgerAccountSelect').value;
   const acc = accounts.find(a=>a.code===code);
   if(!acc) return null;
-  const rows = [];
-  entries.forEach(e=> e.lines.forEach(l=>{ if(l.code===code) rows.push({date:e.date, no:e.no, desc:e.desc, debit:l.debit, credit:l.credit}); }));
-  rows.sort((a,b)=> a.date.localeCompare(b.date));
+  const rows = ledgerRowsFor(acc);
   const increases = (acc.type==='asset'||acc.type==='expense');
   let running = 0, totalD = 0, totalC = 0;
   rows.forEach(r=>{
@@ -3789,7 +3820,7 @@ function dbSpark(vals, color, w, h, opts){
   const line = pts.join(' ');
   const area = 'M'+xs(0).toFixed(1)+','+(h)+' L'+pts.join(' L')+' L'+xs(vals.length-1).toFixed(1)+','+(h)+' Z';
   const last = vals[vals.length-1];
-  return `<svg viewBox="0 0 ${w} ${h}" width="${opts.fill?'100%':w}" height="${opts.fill?'auto':h}" class="db-svg" style="${opts.fill?'':'width:'+w+'px;height:'+h+'px'}" preserveAspectRatio="none">
+  return `<svg viewBox="0 0 ${w} ${h}" ${opts.fill?'':'width="'+w+'" height="'+h+'"'} class="db-svg" style="${opts.fill?'':'width:'+w+'px;height:'+h+'px'}" preserveAspectRatio="none">
     <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity="${opts.light?'.45':'.28'}"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
     <path d="${area}" fill="url(#${id})"/><polyline points="${line}" fill="none" stroke="${color}" stroke-width="${opts.light?2.2:1.8}" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
     <circle cx="${xs(vals.length-1).toFixed(1)}" cy="${ys(last).toFixed(1)}" r="2.6" fill="${color}"/></svg>`;
@@ -3926,7 +3957,7 @@ function dbRenderTable(D){
 }
 
 /* ---------- الرسم الكامل ---------- */
-function renderDashboard(){
+function renderDashboardGeneral(){
   const page = document.getElementById('page-dashboard'); if(!page) return;
   const D = dbCompute(), b = D.b;
   document.getElementById('dbCompany').textContent = (companyInfo && companyInfo.name) ? companyInfo.name : 'لوحة التحكم';
@@ -3962,7 +3993,7 @@ function renderDashboard(){
     <div class="foot"><span style="font-size:11px;color:var(--ink-faint)">${D.prev&&x.dl?'مقارنة بالفترة السابقة':''}</span>${dbSpark(x.spark, x.c, 110, 34)}</div></div>`).join('');
 
   document.getElementById('dbBarChart').innerHTML = dbBarChart(D.series);
-  document.getElementById('dbDonut').innerHTML = dbDonut(D.expBy, D.accMap, D.exp);
+  document.getElementById('dbDonut').innerHTML = dbDonut(D.expBy, D.accMap, D.exp, 'إجمالي المصروفات');
 
   // نشاط الحسابات
   const all = Object.values(D.stats), used = all.filter(s=>s.count>0), unused = all.length - used.length;
@@ -4021,7 +4052,7 @@ function renderDashboard(){
     tip.style.left = x + 'px'; tip.style.top = Math.max(8, e.clientY - h - 12) + 'px';
   });
   page.addEventListener('mouseleave', ()=>{ tip.style.display = 'none'; });
-  renderDashboard();
+  renderDashboardGeneral();
 })();
 
 </script>
@@ -4147,6 +4178,250 @@ function renderFnSnaps(){
     <td><button class="btn btn-danger-text" onclick="fnDelSnap(${s.id})">حذف</button></td></tr>`).join('') : '<tr><td colspan="5"><div class="empty-state">لسه مفيش جرد محفوظ</div></td></tr>';
 }
 fnLoad(); fnBuildRows(); renderFinance();
+
+</script>
+<script>
+/* ============================================================
+   DASHBOARD 2 — تقارير حسب مركز التكلفة / الحساب الرئيسي + طباعة PDF
+   ============================================================ */
+dbState.scope = {kind:'all', code:''};
+function dbMainAccounts(){ return accounts.filter(a=>!a.postable).sort((a,b)=>a.code.localeCompare(b.code)); }
+function dbSeries(months, defs){
+  const keys = Object.keys(months).sort(); if(!keys.length) return [];
+  let [y,m] = keys[0].split('-').map(Number); const [ey,em] = keys[keys.length-1].split('-').map(Number); const out = [];
+  while(y<ey || (y===ey && m<=em)){ const k = y+'-'+String(m).padStart(2,'0'); out.push(Object.assign({k,y,m}, defs, months[k]||{})); m++; if(m>12){ m=1; y++; } }
+  return out.slice(-12);
+}
+/* رسم الأعمدة (معمّم): o = {a,b,l,la,lb,ll,ca,cb} */
+function dbBarChart(series, o){
+  o = Object.assign({a:'rev', b:'exp', l:'net', la:'إيرادات', lb:'مصروفات', ll:'الصافي', ca:'#14A08F', cb:'#D2694A'}, o||{});
+  if(!series.length) return '<div class="db-empty">مفيش حركة في الفترة دي</div>';
+  const W=720,H=290,padL=14,padR=52,padT=16,padB=34, plotW=W-padL-padR, plotH=H-padT-padB;
+  const maxV = Math.max.apply(null, series.map(s=>Math.max(s[o.a],s[o.b],s[o.l],0))), minV = Math.min.apply(null, series.map(s=>Math.min(s[o.l],0)));
+  const hi = dbNiceCeil(maxV||1), lo = minV<0 ? -dbNiceCeil(-minV) : 0, y = v => padT + (hi-v)/(hi-lo)*plotH;
+  const n = series.length, gw = plotW/n, bw = Math.min(24, gw*.3), cx = i => padL + (n-1-i)*gw + gw/2;
+  let g='';
+  for(let t=0;t<=4;t++){ const v=lo+(hi-lo)*t/4, yy=y(v); g += `<line x1="${padL}" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="#E4EBEB" stroke-dasharray="3 4"/><text x="${W-padR+8}" y="${yy+4}" font-size="11" fill="#8CA09E" font-family="IBM Plex Mono">${dbK(v)}</text>`; }
+  if(lo<0) g += `<line x1="${padL}" x2="${W-padR}" y1="${y(0)}" y2="${y(0)}" stroke="#9fb0ae"/>`;
+  let bars='',labels='',hits='';
+  series.forEach((s,i)=>{
+    const x=cx(i), y0=y(0), d=i*.04, ha=Math.max(0,y0-y(s[o.a])), hb=Math.max(0,y0-y(s[o.b]));
+    bars += `<rect class="db-bar" style="animation-delay:${d}s" x="${x-bw-1.5}" y="${y0-ha}" width="${bw}" height="${ha}" rx="4" fill="${o.ca}"/><rect class="db-bar" style="animation-delay:${d+.05}s" x="${x+1.5}" y="${y0-hb}" width="${bw}" height="${hb}" rx="4" fill="${o.cb}"/>`;
+    labels += `<text x="${x}" y="${H-12}" font-size="11.5" fill="#5E7371" text-anchor="middle" font-weight="600">${DB_MONTHS[s.m-1]}</text>`;
+    const tip = `<b style='color:#9fe3d8'>${DB_MONTHS[s.m-1]} ${s.y}</b><br>${o.la}: <b>${fmt(s[o.a])}</b><br>${o.lb}: <b>${fmt(s[o.b])}</b><br>${o.ll}: <b>${fmt(s[o.l])}</b>`;
+    hits += `<rect x="${x-gw/2}" y="${padT}" width="${gw}" height="${plotH}" fill="transparent" data-tip="${dbEsc(tip)}"/>`;
+  });
+  const pts = series.map((s,i)=>cx(i).toFixed(1)+','+y(s[o.l]).toFixed(1)).join(' ');
+  const dots = series.map((s,i)=>`<circle cx="${cx(i)}" cy="${y(s[o.l])}" r="4" fill="#fff" stroke="#AD7F35" stroke-width="2.4"/>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" class="db-svg">${g}${bars}<polyline points="${pts}" fill="none" stroke="#AD7F35" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>${dots}${labels}${hits}</svg>`;
+}
+function dbLegend(o){ o = Object.assign({la:'إيرادات',lb:'مصروفات',ll:'صافي',ca:'#14A08F',cb:'#D2694A'}, o||{}); return `<div class="db-legend"><span><i style="background:${o.ca}"></i>${o.la}</span><span><i style="background:${o.cb}"></i>${o.lb}</span><span><i style="background:#AD7F35"></i>${o.ll}</span></div>`; }
+function dbDonut(by, accMap, total, label, nameFn){
+  const items = Object.keys(by).map(c=>({name: nameFn ? nameFn(c) : (accMap[c]?accMap[c].name:c), v:by[c]})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+  if(!items.length) return '<div class="db-empty">مفيش بيانات في الفترة دي</div>';
+  const top = items.slice(0,5), rest = items.slice(5).reduce((s,x)=>s+x.v,0); if(rest>0) top.push({name:'أخرى', v:rest});
+  const sum = top.reduce((s,x)=>s+x.v,0), R=62, C=2*Math.PI*R; let off=0, segs='';
+  top.forEach((it,i)=>{
+    const len = it.v/sum*C, gap = top.length>1?3:0, tip = `<b style='color:#f2c9bb'>${escHtml(it.name)}</b><br><b>${fmt(it.v)}</b> (${(it.v/sum*100).toFixed(1)}%)`;
+    segs += `<circle class="db-seg" cx="80" cy="80" r="${R}" fill="none" stroke="${DB_PALETTE[i]}" stroke-width="22" stroke-dasharray="${Math.max(0,len-gap)} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 80 80)" data-tip="${dbEsc(tip)}" style="animation-delay:${i*.08}s"/>`; off += len;
+  });
+  const leg = top.map((it,i)=>`<div class="it"><i style="background:${DB_PALETTE[i]}"></i><span class="nm" title="${dbEsc(it.name)}">${escHtml(it.name)}</span><span class="pc">${(it.v/sum*100).toFixed(0)}%</span></div>`).join('');
+  return `<div class="db-donut-wrap"><svg viewBox="0 0 160 160" width="170" height="170" class="db-svg" style="width:170px"><circle cx="80" cy="80" r="62" fill="none" stroke="#EEF3F3" stroke-width="22"/>${segs}<text x="80" y="76" text-anchor="middle" font-size="10.5" fill="#8CA09E">${label||'الإجمالي'}</text><text x="80" y="95" text-anchor="middle" font-size="16" font-weight="700" fill="#1D2B2A" font-family="IBM Plex Mono">${dbK(total)}</text></svg><div class="db-donut-leg">${leg}</div></div>`;
+}
+const DB_ICO = {
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
+  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>',
+  bal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M8 12h8"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>'
+};
+function dbKpiHtml(x){ return `<div class="db-kpi"><div class="top"><div class="lb"><span class="ic" style="background:${x.bg};color:${x.c}">${x.ic}</span>${x.lb}</div></div><div class="val">${x.v}</div><div class="foot"><span style="font-size:11px;color:var(--ink-faint)">${x.foot||''}</span>${x.spark?dbSpark(x.spark, x.c, 110, 34):''}</div></div>`; }
+
+/* ---------- بيانات مركز التكلفة ---------- */
+function dbCcCompute(code){
+  const b = dbRangeBounds(), accMap = {}; accounts.forEach(a=>accMap[a.code]=a);
+  const months={}, revBy={}, expBy={}, st={}, subs={}, ccAgg={}, rec=[]; let rev=0,exp=0,cnt=0,coRev=0,coExp=0;
+  entries.forEach(e=>{
+    if(!dbInRange(e.date,b)) return;
+    const sel = e.costCenterCode===code, cc = e.costCenterCode||''; ccAgg[cc] = ccAgg[cc]||{rev:0,exp:0};
+    (e.lines||[]).forEach(l=>{
+      const a = accMap[l.code]; if(!a) return; const net=(l.debit||0)-(l.credit||0);
+      if(a.type==='revenue'){ coRev-=net; ccAgg[cc].rev-=net; } if(a.type==='expense'){ coExp+=net; ccAgg[cc].exp+=net; }
+      if(!sel) return;
+      const s = st[l.code] = st[l.code]||{acc:a,count:0,debit:0,credit:0,last:''}; s.count++; s.debit+=l.debit||0; s.credit+=l.credit||0; if(e.date>s.last) s.last=e.date;
+      const mk = (e.date||'').slice(0,7); months[mk] = months[mk]||{rev:0,exp:0};
+      if(a.type==='revenue'){ rev-=net; months[mk].rev-=net; revBy[l.code]=(revBy[l.code]||0)-net; }
+      if(a.type==='expense'){ exp+=net; months[mk].exp+=net; expBy[l.code]=(expBy[l.code]||0)+net; }
+    });
+    if(sel){ cnt++; rec.push(e); if(e.subAccountCode){ subs[e.subAccountCode]=(subs[e.subAccountCode]||0)+(e.amount||0); } }
+  });
+  const series = dbSeries(months,{rev:0,exp:0}); series.forEach(s=>s.net=s.rev-s.exp);
+  const rank = Object.keys(ccAgg).filter(k=>k).map(k=>({code:k, name:(costCenters.find(c=>c.code===k)||{}).name||k, rev:ccAgg[k].rev, exp:ccAgg[k].exp, net:ccAgg[k].rev-ccAgg[k].exp})).sort((a,b)=>b.net-a.net);
+  rec.sort((x,y)=>(y.date||'').localeCompare(x.date||'')||(y.id-x.id));
+  return {b, accMap, series, rev, exp, net:rev-exp, cnt, coRev, coExp, revBy, expBy, st:Object.values(st), subs, rank, rec};
+}
+/* ---------- بيانات الحساب الرئيسي ---------- */
+function dbMainCompute(code){
+  const b = dbRangeBounds(), accMap = {}; accounts.forEach(a=>accMap[a.code]=a);
+  const acc = accMap[code], codes = new Set(accountCodesUnder(code)), sg = (acc.type==='asset'||acc.type==='expense')?1:-1;
+  let opening=0, deb=0, cred=0; const months={}, per={}, mv=[];
+  entries.slice().sort((x,y)=>(x.date||'').localeCompare(y.date||'')||(x.id-y.id)).forEach(e=>{
+    (e.lines||[]).forEach(l=>{
+      if(!codes.has(l.code)) return; const d=l.debit||0, c=l.credit||0;
+      if(b.from && e.date<b.from){ opening += sg*(d-c); return; }
+      if(b.to && e.date>b.to) return;
+      deb+=d; cred+=c; const a=accMap[l.code], mk=(e.date||'').slice(0,7);
+      const s = per[l.code] = per[l.code]||{acc:a,count:0,debit:0,credit:0,last:''}; s.count++; s.debit+=d; s.credit+=c; if(e.date>s.last) s.last=e.date;
+      months[mk] = months[mk]||{deb:0,cred:0}; months[mk].deb+=d; months[mk].cred+=c;
+      mv.push({date:e.date,no:e.no,desc:e.desc,debit:d,credit:c,acc:a.name,id:e.id});
+    });
+  });
+  const series = dbSeries(months,{deb:0,cred:0}); let cum = opening;
+  Object.keys(months).sort().forEach(()=>{}); 
+  // الرصيد التراكمي حتى نهاية كل شهر (يشمل الشهور السابقة لأول شهر معروض)
+  const allKeys = Object.keys(months).sort(), run = {}; let c2 = opening; allKeys.forEach(k=>{ c2 += sg*(months[k].deb-months[k].cred); run[k]=c2; });
+  let last = opening; series.forEach(s=>{ if(run[s.k]!==undefined) last = run[s.k]; s.bal = last; });
+  mv.sort((x,y)=>(y.date||'').localeCompare(x.date||'')||(y.id-x.id));
+  const closing = opening + sg*(deb-cred);
+  return {b, accMap, acc, sg, opening, deb, cred, closing, series, per:Object.values(per), mv, nCodes:[...codes].filter(c=>accMap[c]&&accMap[c].postable).length};
+}
+const dbPill = a => `<span class="pill ${TYPE_PILL[a.type]||'pill-group'}">${TYPE_LABEL[a.type]||''}</span>`;
+function dbCardH(t,h,body,extra){ return `<div class="db-card" ${extra||''}><h3>${t}</h3><div class="hint">${h||''}</div>${body}</div>`; }
+
+function dbCcHtml(D, name){
+  const k = [
+    {lb:'الإيرادات', v:fmt(D.rev), c:'#14A08F', bg:'#E3F3EE', ic:DB_ICO.up, spark:D.series.map(s=>s.rev), foot: D.coRev>0 ? (D.rev/D.coRev*100).toFixed(1)+'% من إيرادات الشركة' : ''},
+    {lb:'المصروفات', v:fmt(D.exp), c:'#D2694A', bg:'#F8E8E2', ic:DB_ICO.down, spark:D.series.map(s=>s.exp), foot: D.coExp>0 ? (D.exp/D.coExp*100).toFixed(1)+'% من مصروفات الشركة' : ''},
+    {lb:'صافي النتيجة', v:fmt(D.net), c:D.net>=0?'#0E6B5F':'#B3402A', bg:D.net>=0?'#E3F3EE':'#F8E8E2', ic:DB_ICO.bal, spark:D.series.map(s=>s.net), foot: D.rev>0 ? 'هامش '+(D.net/D.rev*100).toFixed(1)+'%' : ''},
+    {lb:'عدد القيود', v:String(D.cnt), c:'#2E5F8A', bg:'#E7EEF5', ic:DB_ICO.doc, spark:null, foot:'قيد على المركز في الفترة'}
+  ];
+  const nm = c => (D.accMap[c]||{}).name || c;
+  const revItems = Object.keys(D.revBy).map(c=>({code:c,name:nm(c),v:D.revBy[c],label:fmt(D.revBy[c]),color:'#14A08F'})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,6);
+  const rank = D.rank.map(r=>({name:r.name, v:Math.max(0,r.net), label:fmt(r.net), color: r.code===dbState.scope.code ? '#AD7F35' : '#9fb3b0'})).slice(0,8);
+  const rows = D.st.sort((a,b)=>b.count-a.count).map(s=>`<tr onclick="dbOpenLedger('${s.acc.code}')"><td><div class="db-acc"><span class="acc-name" style="font-size:13.5px">${escHtml(s.acc.name)}</span><span class="c">${escHtml(s.acc.code)}</span></div></td><td>${dbPill(s.acc)}</td><td class="num">${s.count}</td><td class="num">${s.debit?fmt(s.debit):'—'}</td><td class="num">${s.credit?fmt(s.credit):'—'}</td><td style="font-size:12px;white-space:nowrap">${dbAgo(s.last)}</td></tr>`).join('') || '<tr><td colspan="6"><div class="db-empty">مفيش حركة</div></td></tr>';
+  const rec = D.rec.slice(0,6).map(e=>{ const p=(e.date||'').split('-'), f=D.accMap[e.fromCode], t=D.accMap[e.toCode]; return `<div class="it"><div class="dot"><span>${p[2]||''}</span><span style="font-size:9px;opacity:.7">${p[1]?DB_MONTHS[+p[1]-1].slice(0,4):''}</span></div><div class="tx"><div class="d">${escHtml(e.desc||'—')}</div><div class="f">${escHtml(f?f.name:'—')} ← ${escHtml(t?t.name:'—')}</div></div><div class="am">${fmt(e.amount||0)}</div></div>`; }).join('') || '<div class="db-empty">مفيش قيود</div>';
+  return `<div class="db-kpis">${k.map(dbKpiHtml).join('')}</div>
+  <div class="db-row r-2-1">${dbCardH('الإيرادات والمصروفات شهريًا','مركز التكلفة: '+escHtml(name), dbLegend()+dbBarChart(D.series))}${dbCardH('توزيع المصروفات','أكبر بنود المصروفات على المركز', dbDonut(D.expBy, D.accMap, D.exp, 'إجمالي المصروفات'))}</div>
+  <div class="db-row r-1-1">${dbCardH('مصادر الإيرادات','أكتر الحسابات اللي جابت إيراد للمركز', dbHBars(revItems,'#14A08F'))}${dbCardH('مقارنة المراكز بصافي النتيجة','المركز المختار بالذهبي', dbHBars(rank,'#9fb3b0'))}</div>
+  <div class="db-row r-2-1">${dbCardH('حسابات المركز','كل الحسابات اللي اتحركت على المركز — اضغط لفتح الأستاذ', `<div class="db-tbl-wrap"><table><thead><tr><th>الحساب</th><th>النوع</th><th>الحركات</th><th class="num">مدين</th><th class="num">دائن</th><th>آخر حركة</th></tr></thead><tbody>${rows}</tbody></table></div>`)}${dbCardH('آخر القيود','آخر ما اتسجل على المركز', `<div class="db-tl">${rec}</div>`)}</div>`;
+}
+function dbMainHtml(D){
+  const a = D.acc, up = D.closing >= D.opening;
+  const k = [
+    {lb:'الرصيد الافتتاحي', v:fmt(D.opening), c:'#5B6864', bg:'#EEF2F1', ic:DB_ICO.doc, foot:D.b.from?'قبل بداية الفترة':'بداية النظام'},
+    {lb:'إجمالي مدين', v:fmt(D.deb), c:'#2E5F8A', bg:'#E7EEF5', ic:DB_ICO.down, spark:D.series.map(s=>s.deb)},
+    {lb:'إجمالي دائن', v:fmt(D.cred), c:'#C28A3E', bg:'#F6EEDC', ic:DB_ICO.up, spark:D.series.map(s=>s.cred)},
+    {lb:'الرصيد الختامي', v:fmt(D.closing), c:'#0E6B5F', bg:'#E3F3EE', ic:DB_ICO.bal, spark:D.series.map(s=>s.bal), foot:(up?'▲ ':'▼ ')+fmt(Math.abs(D.closing-D.opening))+' عن الافتتاحي'}
+  ];
+  const by = {}; D.per.forEach(s=>{ by[s.acc.code] = s.debit + s.credit; });
+  const rows = D.per.sort((x,y)=>y.count-x.count).map(s=>`<tr onclick="dbOpenLedger('${s.acc.code}')"><td><div class="db-acc"><span class="acc-name" style="font-size:13.5px">${escHtml(s.acc.name)}</span><span class="c">${escHtml(s.acc.code)}</span></div></td><td class="num">${s.count}</td><td class="num">${s.debit?fmt(s.debit):'—'}</td><td class="num">${s.credit?fmt(s.credit):'—'}</td><td class="num amt-num">${fmt(D.sg*(s.debit-s.credit))}</td><td style="font-size:12px;white-space:nowrap">${dbAgo(s.last)}</td></tr>`).join('') || '<tr><td colspan="6"><div class="db-empty">مفيش حركة على الحسابات الفرعية في الفترة دي</div></td></tr>';
+  const mv = D.mv.slice(0,25).map(m=>`<tr><td class="num date-col">${escHtml(m.date)}</td><td>${escHtml(m.desc||'')}</td><td style="font-size:12px;color:var(--ink-soft)">${escHtml(m.acc)}</td><td class="num">${m.debit?fmt(m.debit):''}</td><td class="num">${m.credit?fmt(m.credit):''}</td></tr>`).join('') || '<tr><td colspan="5"><div class="db-empty">مفيش حركات</div></td></tr>';
+  return `<div class="db-kpis">${k.map(dbKpiHtml).join('')}</div>
+  <div class="db-row r-2-1">${dbCardH('حركة الحساب شهريًا','الأعمدة للمدين والدائن، والخط الذهبي للرصيد التراكمي', dbLegend({la:'مدين',lb:'دائن',ll:'الرصيد',ca:'#2E5F8A',cb:'#C28A3E'})+dbBarChart(D.series,{a:'deb',b:'cred',l:'bal',la:'مدين',lb:'دائن',ll:'الرصيد',ca:'#2E5F8A',cb:'#C28A3E'}))}${dbCardH('توزيع الحركة على الحسابات الفرعية','حسب إجمالي المدين + الدائن', dbDonut(by, D.accMap, D.deb+D.cred, 'إجمالي الحركة'))}</div>
+  <div class="db-row">${dbCardH('الحسابات الفرعية تحت '+escHtml(a.name),'كل حساب فرعي اتحرك في الفترة ('+D.per.length+' من '+D.nCodes+') — اضغط لفتح الأستاذ', `<div class="db-tbl-wrap"><table><thead><tr><th>الحساب</th><th>الحركات</th><th class="num">مدين</th><th class="num">دائن</th><th class="num">الرصيد</th><th>آخر حركة</th></tr></thead><tbody>${rows}</tbody></table></div>`)}</div>
+  <div class="db-row">${dbCardH('آخر الحركات','آخر 25 حركة على الحساب وفروعه', `<div class="db-tbl-wrap"><table><thead><tr><th>التاريخ</th><th>البيان</th><th>الحساب الفرعي</th><th class="num">مدين</th><th class="num">دائن</th></tr></thead><tbody>${mv}</tbody></table></div><div style="margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="dbOpenLedger('${a.code}')">فتح كشف الحساب الكامل في دفتر الأستاذ</button></div>`)}</div>`;
+}
+
+/* ---------- العرض ---------- */
+function dbScopeName(){
+  const s = dbState.scope;
+  if(s.kind==='cc'){ const c = costCenters.find(x=>x.code===s.code); return c ? c.name : ''; }
+  if(s.kind==='main'){ const a = accounts.find(x=>x.code===s.code); return a ? a.code+' — '+a.name : ''; }
+  return '';
+}
+function dbFillScopeSel(){
+  const s = dbState.scope, sel = document.getElementById('dbScopeSel');
+  document.querySelectorAll('#dbScopeBar .db-chip[data-k]').forEach(c=>c.classList.toggle('on', c.dataset.k===s.kind));
+  if(s.kind==='all'){ sel.style.display='none'; return; }
+  sel.style.display = '';
+  const list = s.kind==='cc' ? costCenters.map(c=>[c.code,c.code+' — '+c.name]) : dbMainAccounts().map(a=>[a.code,a.code+' — '+a.name]);
+  sel.innerHTML = list.map(([v,t])=>`<option value="${escHtml(v)}" ${v===s.code?'selected':''}>${escHtml(t)}</option>`).join('');
+}
+function dbSetScope(kind){
+  if(kind==='all'){ dbState.scope = {kind:'all', code:''}; }
+  else {
+    const list = kind==='cc' ? costCenters : dbMainAccounts();
+    if(!list.length){ showToast(kind==='cc'?'مفيش مراكز تكلفة لسه':'مفيش حسابات رئيسية', true); return; }
+    dbState.scope = {kind, code:list[0].code};
+  }
+  renderDashboard();
+}
+function renderDashboard(){
+  const page = document.getElementById('page-dashboard'); if(!page) return;
+  const s = dbState.scope, gen = document.getElementById('dbGeneral'), sc = document.getElementById('dbScoped');
+  if(s.kind!=='all' && !dbScopeName()){ dbState.scope = {kind:'all', code:''}; return renderDashboard(); }
+  dbFillScopeSel();
+  if(s.kind==='all'){ gen.style.display=''; sc.style.display='none'; return renderDashboardGeneral(); }
+  gen.style.display='none'; sc.style.display='';
+  const b = dbRangeBounds(); document.querySelectorAll('#dbRange .db-chip').forEach(c=>c.classList.toggle('on', c.dataset.r===dbState.range));
+  if(dbState.range!=='custom'){ document.getElementById('dbFrom').value=b.from||''; document.getElementById('dbTo').value=b.to||''; }
+  const lbl = b.from||b.to ? ('الفترة: '+(b.from?b.from.split('-').reverse().join('/'):'البداية')+' — '+(b.to?b.to.split('-').reverse().join('/'):'النهارده')) : 'كل الفترات';
+  document.getElementById('dbCompany').textContent = (s.kind==='cc'?'مركز التكلفة: ':'الحساب: ') + dbScopeName();
+  let D;
+  if(s.kind==='cc'){
+    D = dbCcCompute(s.code); sc.innerHTML = dbCcHtml(D, dbScopeName());
+    document.getElementById('dbPeriodLabel').textContent = (companyInfo.name||'')+' · '+lbl+' · '+D.cnt+' قيد';
+    document.getElementById('dbNetLabel').textContent = D.net>=0 ? '▲ صافي ربح المركز' : '▼ صافي خسارة المركز';
+    document.getElementById('dbNet').innerHTML = fmt(Math.abs(D.net))+'<small>ج.م</small>';
+    document.getElementById('dbMargin').textContent = D.rev>0 ? 'هامش الربح '+(D.net/D.rev*100).toFixed(1)+'%' : 'هامش الربح —';
+    document.getElementById('dbHeroSpark').innerHTML = dbSpark(D.series.map(x=>x.net),'#ffd98a',520,90,{fill:true,light:true});
+  } else {
+    D = dbMainCompute(s.code); sc.innerHTML = dbMainHtml(D);
+    document.getElementById('dbPeriodLabel').textContent = (companyInfo.name||'')+' · '+lbl+' · '+D.mv.length+' حركة';
+    document.getElementById('dbNetLabel').textContent = 'الرصيد الختامي';
+    document.getElementById('dbNet').innerHTML = fmt(D.closing)+'<small>ج.م</small>';
+    document.getElementById('dbMargin').textContent = 'من '+fmt(D.opening)+' إلى '+fmt(D.closing);
+    document.getElementById('dbHeroSpark').innerHTML = dbSpark(D.series.map(x=>x.bal),'#ffd98a',520,90,{fill:true,light:true});
+  }
+}
+
+/* ---------- طباعة PDF لأي تقرير في الداشبورد ---------- */
+const DB_PRINT_CSS = `<style>
+.db-svg{ width:100%; height:auto; display:block; } .sec{ margin:0 0 16px; page-break-inside:avoid; } .sec h2{ font-size:14px; color:#0E5C56; margin:0 0 8px; border-inline-start:4px solid #AD7F35; padding-inline-start:8px; }
+.db-legend{ display:flex; gap:14px; font-size:11px; margin-bottom:4px; } .db-legend i{ display:inline-block; width:10px; height:10px; border-radius:3px; margin-inline-end:5px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.db-donut-wrap{ display:flex; align-items:center; gap:18px; } .db-donut-leg{ flex:1; font-size:12px; } .db-donut-leg .it{ display:flex; gap:8px; align-items:center; margin:5px 0; } .db-donut-leg .it i{ width:10px; height:10px; border-radius:3px; -webkit-print-color-adjust:exact; print-color-adjust:exact; } .db-donut-leg .nm{ flex:1; font-weight:700; } .db-donut-leg .pc{ direction:ltr; }
+.two{ display:grid; grid-template-columns:1.6fr 1fr; gap:14px; } .pill{ font-size:10.5px; padding:2px 8px; border-radius:10px; background:#eef2f1; }
+.db-bar,.db-seg{ animation:none !important; } svg{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+</style>`;
+function dbPrintTable(head, rows){ return `<table><thead><tr>${head.map((h,i)=>`<th${h[1]?' class="n"':''}>${h[0]}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`; }
+function dbPrintReport(){
+  const s = dbState.scope, b = dbRangeBounds();
+  const per = b.from||b.to ? ((b.from?b.from.split('-').reverse().join('/'):'البداية')+' — '+(b.to?b.to.split('-').reverse().join('/'):'النهارده')) : 'كل الفترات';
+  const meta = 'الفترة: '+per; let title, sub, cards, body;
+  const td = v => `<td class="n">${v}</td>`;
+  if(s.kind==='all'){
+    const D = dbCompute(); title = 'تقرير لوحة التحكم — الشركة كلها'; sub = D.cnt+' قيد';
+    cards = reportSumCardHtml('credit','الإيرادات',fmt(D.rev))+reportSumCardHtml('debit','المصروفات',fmt(D.exp))+reportSumCardHtml('balance',D.net>=0?'صافي الربح':'صافي الخسارة',fmt(Math.abs(D.net)))+reportSumCardHtml('neutral','إجمالي الأصول',fmt(D.assets))+reportSumCardHtml('neutral','الخصوم + حقوق الملكية',fmt(D.liab+D.equity));
+    const used = Object.values(D.stats).filter(x=>x.count).sort((a,c)=>c.count-a.count).slice(0,25);
+    const ccs = Object.keys(D.ccs).map(c=>({n:(costCenters.find(x=>x.code===c)||{}).name||c, v:D.ccs[c].v, c:D.ccs[c].n})).sort((a,c)=>c.v-a.v);
+    body = `<div class="two"><div class="sec"><h2>الإيرادات والمصروفات شهريًا</h2>${dbLegend()}${dbBarChart(D.series)}</div><div class="sec"><h2>توزيع المصروفات</h2>${dbDonut(D.expBy,D.accMap,D.exp,'إجمالي المصروفات')}</div></div>
+    <div class="sec"><h2>الحسابات الأكثر حركة</h2>${dbPrintTable([['الحساب'],['النوع'],['الحركات',1],['مدين',1],['دائن',1],['الرصيد',1]], used.map(x=>`<tr><td>${escHtml(x.acc.name)}</td><td>${TYPE_LABEL[x.acc.type]||''}</td>${td(x.count)}${td(fmt(x.debit))}${td(fmt(x.credit))}${td(fmt(x.bal))}</tr>`))}</div>
+    ${ccs.length?`<div class="sec"><h2>حجم الحركة حسب مركز التكلفة</h2>${dbPrintTable([['المركز'],['القيود',1],['إجمالي المبالغ',1]], ccs.map(x=>`<tr><td>${escHtml(x.n)}</td>${td(x.c)}${td(fmt(x.v))}</tr>`))}</div>`:''}`;
+  } else if(s.kind==='cc'){
+    const D = dbCcCompute(s.code); title = 'تقرير مركز التكلفة'; sub = escHtml(dbScopeName());
+    cards = reportSumCardHtml('credit','الإيرادات',fmt(D.rev))+reportSumCardHtml('debit','المصروفات',fmt(D.exp))+reportSumCardHtml('balance',D.net>=0?'صافي الربح':'صافي الخسارة',fmt(Math.abs(D.net)))+reportSumCardHtml('neutral','عدد القيود',String(D.cnt));
+    const nm = c => (D.accMap[c]||{}).name||c;
+    const rv = Object.keys(D.revBy).filter(c=>D.revBy[c]>0).sort((a,c)=>D.revBy[c]-D.revBy[a]), ex = Object.keys(D.expBy).filter(c=>D.expBy[c]>0).sort((a,c)=>D.expBy[c]-D.expBy[a]);
+    body = `<div class="two"><div class="sec"><h2>الإيرادات والمصروفات شهريًا</h2>${dbLegend()}${dbBarChart(D.series)}</div><div class="sec"><h2>توزيع المصروفات</h2>${dbDonut(D.expBy,D.accMap,D.exp,'إجمالي المصروفات')}</div></div>
+    <div class="sec"><h2>تفصيل الإيرادات</h2>${dbPrintTable([['الحساب'],['المبلغ',1],['النسبة',1]], rv.map(c=>`<tr><td>${escHtml(nm(c))}</td>${td(fmt(D.revBy[c]))}${td((D.revBy[c]/D.rev*100).toFixed(1)+'%')}</tr>`))}</div>
+    <div class="sec"><h2>تفصيل المصروفات</h2>${dbPrintTable([['الحساب'],['المبلغ',1],['النسبة',1]], ex.map(c=>`<tr><td>${escHtml(nm(c))}</td>${td(fmt(D.expBy[c]))}${td((D.expBy[c]/D.exp*100).toFixed(1)+'%')}</tr>`))}</div>
+    <div class="sec"><h2>آخر القيود على المركز</h2>${dbPrintTable([['التاريخ'],['البيان'],['من'],['إلى'],['المبلغ',1]], D.rec.slice(0,25).map(e=>`<tr><td class="dt">${escHtml(e.date)}</td><td>${escHtml(e.desc||'')}</td><td>${escHtml(nm(e.fromCode))}</td><td>${escHtml(nm(e.toCode))}</td>${td(fmt(e.amount||0))}</tr>`))}</div>`;
+  } else {
+    const D = dbMainCompute(s.code); title = 'تقرير الحساب الرئيسي'; sub = escHtml(dbScopeName());
+    cards = reportSumCardHtml('neutral','الرصيد الافتتاحي',fmt(D.opening))+reportSumCardHtml('debit','إجمالي مدين',fmt(D.deb))+reportSumCardHtml('credit','إجمالي دائن',fmt(D.cred))+reportSumCardHtml('balance','الرصيد الختامي',fmt(D.closing));
+    const by = {}; D.per.forEach(x=>{ by[x.acc.code]=x.debit+x.credit; });
+    const o = {a:'deb',b:'cred',l:'bal',la:'مدين',lb:'دائن',ll:'الرصيد',ca:'#2E5F8A',cb:'#C28A3E'};
+    body = `<div class="two"><div class="sec"><h2>حركة الحساب شهريًا</h2>${dbLegend(o)}${dbBarChart(D.series,o)}</div><div class="sec"><h2>توزيع الحركة</h2>${dbDonut(by,D.accMap,D.deb+D.cred,'إجمالي الحركة')}</div></div>
+    <div class="sec"><h2>الحسابات الفرعية</h2>${dbPrintTable([['الحساب'],['الحركات',1],['مدين',1],['دائن',1],['الرصيد',1]], D.per.sort((x,y)=>y.count-x.count).map(x=>`<tr><td>${escHtml(x.acc.name)}</td>${td(x.count)}${td(fmt(x.debit))}${td(fmt(x.credit))}${td(fmt(D.sg*(x.debit-x.credit)))}</tr>`))}</div>
+    <div class="sec"><h2>آخر الحركات</h2>${dbPrintTable([['التاريخ'],['البيان'],['الحساب الفرعي'],['مدين',1],['دائن',1]], D.mv.slice(0,30).map(m=>`<tr><td class="dt">${escHtml(m.date)}</td><td>${escHtml(m.desc||'')}</td><td>${escHtml(m.acc)}</td>${td(m.debit?fmt(m.debit):'')}${td(m.credit?fmt(m.credit):'')}</tr>`))}</div>`;
+  }
+  openPrintWindow(buildReportDocument({title, subtitleHtml:sub, metaHtml:meta, sumCardsHtml:cards, tableHtml:DB_PRINT_CSS+body, docTitle:title}), 'dbPrint');
+}
+(function dbInit2(){
+  document.querySelectorAll('#dbScopeBar .db-chip[data-k]').forEach(c=>c.addEventListener('click',()=>dbSetScope(c.dataset.k)));
+  document.getElementById('dbScopeSel').addEventListener('change',e=>{ dbState.scope.code = e.target.value; renderDashboard(); });
+  document.getElementById('dbPrint').addEventListener('click', dbPrintReport);
+  renderDashboard();
+})();
 
 </script>
 </body>
