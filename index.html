@@ -1129,6 +1129,13 @@
       </div>
 
       <div class="card" style="padding:20px; max-width:640px; margin-top:18px;">
+        <div class="section-title"><span class="dot" style="background:#2E5F8A"></span>فحص المزامنة</div>
+        <p style="font-size:12.5px; color:var(--ink-faint); margin:0 0 12px;">بيجرّب قراءة وكتابة حقيقية على السيرفر ويقولك المزامنة شغالة ولا فيه مشكلة وإيه سببها.</p>
+        <button class="btn btn-ghost" id="syncCheckBtn" onclick="syncCheck()">▶ ابدأ فحص المزامنة</button>
+        <div id="syncCheckBox"></div>
+      </div>
+
+      <div class="card" style="padding:20px; max-width:640px; margin-top:18px;">
         <div class="section-title"><span class="dot" style="background:var(--gold)"></span>النسخ الاحتياطي</div>
         <p style="font-size:12.5px; color:var(--ink-faint); margin:0 0 14px;">احفظي نسخة من كل بيانات النظام — شجرة الحسابات، القيود، الفروع، مراكز التكلفة، وبيانات الشركة — في ملف واحد تقدري ترجعي بيه أي وقت.</p>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -3072,7 +3079,11 @@ function applyStateSnapshot(d){
   if(Number.isFinite(d.entrySeq)) entrySeq = d.entrySeq;
   if(Array.isArray(d.subAccounts)) subAccounts = d.subAccounts;
   if(Array.isArray(d.costCenters)) costCenters = d.costCenters;
-  if(d.companyInfo && typeof d.companyInfo==='object') companyInfo = {name: d.companyInfo.name || '', logo: d.companyInfo.logo || null};
+  if(d.companyInfo && typeof d.companyInfo==='object'){
+    const inc = {name: d.companyInfo.name || '', logo: d.companyInfo.logo || null, updatedAt: d.companyInfo.updatedAt || 0};
+    if((companyInfo.updatedAt||0) > inc.updatedAt){ window._coNeedsPush = true; }   // نسخة محلية أحدث: منستبدلهاش
+    else companyInfo = inc;
+  }
 }
 function saveState(){
   // حفظ محلي فوري كنسخة احتياطية لو النت اتقطع (بيشمل القيود كمان كـ fallback بس مش ده مصدر الحقيقة)
@@ -3299,6 +3310,7 @@ function renderAll(){
   saveState();
   try{ renderDashboard(); }catch(e){ console.warn("dashboard", e); }
   try{ renderFinance(); }catch(e){ console.warn("finance", e); }
+  try{ coPushIfNeeded(); }catch(e){}
   applyCompanyBranding();
   renderAccountsTree();
   renderSubAccounts();
@@ -4446,6 +4458,104 @@ function dbPrintReport(){
   document.getElementById('dbPrint').addEventListener('click', dbPrintReport);
   renderDashboard();
 })();
+
+</script>
+<script>
+/* ============================================================
+   إصلاح حفظ بيانات الشركة + فحص المزامنة
+   ============================================================ */
+const CO_KEY = 'daftara_company_v1';
+function coToast(m, bad){ showToast(m, bad); }
+function coCompress(file, max, cb){
+  const fr = new FileReader();
+  fr.onload = ()=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const sc = Math.min(1, max / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(img.width*sc)); cv.height = Math.max(1, Math.round(img.height*sc));
+      const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0, cv.width, cv.height);
+      cb(cv.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.88));
+    };
+    img.onerror = ()=> coToast('تعذر قراءة الصورة — جرّب صورة تانية (PNG أو JPG)', true);
+    img.src = fr.result;
+  };
+  fr.onerror = ()=> coToast('تعذر قراءة ملف الصورة', true);
+  fr.readAsDataURL(file);
+}
+function handleLogoUpload(ev){
+  const file = ev.target.files && ev.target.files[0]; if(!file) return;
+  if(!file.type.startsWith('image/')){ coToast('اختار ملف صورة', true); ev.target.value=''; return; }
+  coCompress(file, 360, data=>{
+    companyInfo.logo = data; renderSettingsPage();
+    coToast('تم تحميل الشعار (' + Math.round(data.length/1024) + ' KB) — اضغط "حفظ بيانات الشركة" لتثبيته');
+  });
+}
+function coWithTimeout(p, ms){ return Promise.race([p, new Promise((_,rej)=> setTimeout(()=> rej({code:'timeout'}), ms))]); }
+function coErrText(e){
+  const c = (e && e.code) || '';
+  if(c === 'permission-denied') return 'قواعد فايرستور بتمنع الوصول (permission-denied) — لازم تعدّل Rules';
+  if(c === 'timeout' || c === 'unavailable') return 'السيرفر مش بيرد (النت ضعيف أو فايرستور محجوب)';
+  if(c === 'invalid-argument' || c === 'resource-exhausted') return 'حجم البيانات كبير (' + c + ') — صغّر الشعار';
+  return (e && (e.message || c)) || 'خطأ غير معروف';
+}
+function coPush(){
+  companyInfo.updatedAt = companyInfo.updatedAt || Date.now();
+  return coWithTimeout(FIRESTORE_META.set({companyInfo: {name: companyInfo.name||'', logo: companyInfo.logo||null, updatedAt: companyInfo.updatedAt}}, {merge:true}), 9000);
+}
+function saveCompanyInfo(){
+  companyInfo.name = (document.getElementById('setCompanyName').value || '').trim();
+  companyInfo.updatedAt = Date.now();
+  let localOk = true;
+  try{ localStorage.setItem(CO_KEY, JSON.stringify(companyInfo)); }catch(e){ localOk = false; }
+  try{ saveState(); }catch(e){}
+  applyCompanyBranding(); renderSettingsPage();
+  try{ renderDashboard(); }catch(e){}
+  coToast(localOk ? 'تم الحفظ على الجهاز — جاري المزامنة مع السيرفر…' : 'تعذر الحفظ المحلي (الصورة كبيرة) — جاري المحاولة على السيرفر…', !localOk);
+  coPush().then(()=>{ coToast('✅ تم حفظ بيانات الشركة ومزامنتها مع السيرفر'); })
+          .catch(e=>{ coToast('⚠️ اتحفظت على جهازك بس مش على السيرفر: ' + coErrText(e) + ' — جرّب "فحص المزامنة" في الإعدادات', true); window._coNeedsPush = true; });
+}
+function removeLogo(){
+  companyInfo.logo = null; const i = document.getElementById('setLogoInput'); if(i) i.value = '';
+  renderSettingsPage();
+}
+// لو فيه نسخة محلية أحدث من اللي على السيرفر، ندفعها لما الاتصال يشتغل
+function coPushIfNeeded(){
+  if(window._coNeedsPush && typeof _metaReady !== 'undefined' && _metaReady){ window._coNeedsPush = false; coPush().catch(()=>{ window._coNeedsPush = true; }); }
+}
+function coStartup(){
+  try{
+    const raw = localStorage.getItem(CO_KEY); if(!raw) return;
+    const c = JSON.parse(raw);
+    if(c && (c.updatedAt||0) > (companyInfo.updatedAt||0)){ companyInfo = {name:c.name||'', logo:c.logo||null, updatedAt:c.updatedAt}; window._coNeedsPush = true; applyCompanyBranding(); renderSettingsPage(); }
+  }catch(e){}
+}
+
+/* ---------- فحص المزامنة ---------- */
+async function syncCheck(){
+  const box = document.getElementById('syncCheckBox'), btn = document.getElementById('syncCheckBtn');
+  const rows = []; const show = ()=>{ box.innerHTML = rows.map(r=>`<div style="display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:9px;margin-top:6px;background:${r.ok===true?'#E3F3EE':r.ok===false?'#F8E8E2':'#EEF2F1'};color:${r.ok===true?'#0E6B5F':r.ok===false?'#A34632':'#5B6864'};font-size:13px;font-weight:600;"><span>${r.ok===true?'✅':r.ok===false?'❌':'⏳'}</span><span style="flex:1">${r.t}</span></div>`).join(''); };
+  btn.disabled = true;
+  rows.push({ok:navigator.onLine, t: navigator.onLine ? 'الجهاز متصل بالإنترنت' : 'الجهاز أوفلاين — مفيش إنترنت'}); show();
+  rows.push({ok:null, t:'جاري اختبار القراءة من السيرفر…'}); show();
+  let t0 = performance.now();
+  try{
+    const snap = await coWithTimeout(FIRESTORE_META.get({source:'server'}), 10000);
+    rows[rows.length-1] = {ok:true, t:'القراءة من السيرفر شغالة (' + Math.round(performance.now()-t0) + 'ms) — ' + (snap.exists ? 'مستند البيانات موجود' : 'مستند البيانات لسه مش موجود')};
+  }catch(e){ rows[rows.length-1] = {ok:false, t:'فشلت القراءة: ' + coErrText(e)}; }
+  show();
+  rows.push({ok:null, t:'جاري اختبار الكتابة على السيرفر…'}); show();
+  t0 = performance.now();
+  try{
+    await coWithTimeout(FIRESTORE_META.set({syncCheckAt: Date.now()}, {merge:true}), 10000);
+    rows[rows.length-1] = {ok:true, t:'الكتابة على السيرفر شغالة (' + Math.round(performance.now()-t0) + 'ms) — المزامنة سليمة'};
+  }catch(e){ rows[rows.length-1] = {ok:false, t:'فشلت الكتابة: ' + coErrText(e)}; }
+  show();
+  const bad = rows.some(r=>r.ok===false);
+  if(bad){ const permission = rows.some(r=>/permission-denied/.test(r.t));
+    rows.push({ok:null, t: permission ? 'الحل: Firebase Console ← Firestore Database ← Rules، وغيّر الشرط لـ: allow read, write: if true; ثم Publish.' : 'الحل: جرّب شبكة تانية أو VPN، وتأكد إن firestore.googleapis.com مش محجوب.'}); show(); }
+  btn.disabled = false;
+}
+coStartup();
 
 </script>
 </body>
