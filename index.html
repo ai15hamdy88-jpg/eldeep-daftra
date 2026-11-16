@@ -807,7 +807,7 @@
         <div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn btn-ghost" onclick="openImportEntriesModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg> استيراد قيود</button><button class="btn btn-ghost" onclick="exportEntriesExcel()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> حفظ Excel</button><button class="btn btn-ghost" onclick="exportEntriesJson()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> حفظ بصيغة البرنامج</button><button class="btn btn-ghost" style="color:#dc2626; border-color:#dc2626;" onclick="deleteAllEntries()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg> حذف كل القيود</button><button class="btn btn-primary" onclick="openEntryModal()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           إضافة قيد
-        </button></div>
+        </button><button class="btn btn-ghost" onclick="openCompoundModal()" title="قيد فيه أكتر من حساب مدين أو دائن">⊞ قيد مزدوج</button></div>
       </div>
       <div class="card" style="padding:14px 16px; margin-bottom:14px;">
         <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
@@ -1310,6 +1310,47 @@
   </div>
 </div>
 
+
+<!-- ===================== MODAL: COMPOUND ENTRY (قيد مزدوج / مركّب) ===================== -->
+<div class="overlay" id="compoundOverlay">
+  <div class="modal wide" style="max-width:900px;">
+    <div class="modal-head"><h3 id="cmpTitle">قيد مزدوج (مركّب)</h3><button class="modal-close" onclick="closeModal('compoundOverlay')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field"><label>التاريخ</label><input type="date" id="cmpDate"></div>
+        <div class="field"><label>البيان</label><input id="cmpDesc" placeholder="وصف مختصر للعملية"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>الفرعي <span class="muted" style="font-weight:400;">(اختياري)</span></label><select id="cmpSub" class="rc-per" style="width:100%;padding:9px 10px;"></select></div>
+        <div class="field"><label>مركز التكلفة</label><select id="cmpCC" class="rc-per" style="width:100%;padding:9px 10px;"></select></div>
+      </div>
+      <div class="table-wrap" style="overflow:visible;">
+        <table class="rc-rows" style="width:100%;">
+          <thead><tr><th>#</th><th>الحساب</th><th>مدين</th><th>دائن</th><th></th></tr></thead>
+          <tbody id="cmpLines"></tbody>
+        </table>
+      </div>
+      <div style="margin:10px 0 4px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="cmpAddLine()">+ إضافة طرف</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="cmpBalBtn" onclick="cmpBalance()" style="display:none;">⚖ وازن القيد تلقائي</button>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>صورة مرفقة (اختياري)</label>
+        <input type="file" id="cmpImgIn" accept="image/*" onchange="cmpPickImage(this)">
+        <div id="cmpImgPrev" style="margin-top:8px;"></div>
+      </div>
+      <div class="totals-strip" style="gap:18px;flex-wrap:wrap;">
+        <span>إجمالي المدين: <b class="num" id="cmpTotD">0.00</b></span>
+        <span>إجمالي الدائن: <b class="num" id="cmpTotC">0.00</b></span>
+        <span>الحالة: <b class="num" id="cmpMsg">أكمل بيانات القيد</b></span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('compoundOverlay')">إلغاء</button>
+      <button class="btn btn-primary" id="cmpSave" onclick="cmpSave()">ترحيل</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===================== MODAL: IMPORT ENTRIES ===================== -->
 <div class="overlay" id="importEntriesOverlay">
@@ -2107,6 +2148,7 @@ function importEntriesRows(rows){
     if(Math.abs(debit-credit)>=0.005) return bad(r,`القيد غير متزن (مدين ${fmt(debit)} ≠ دائن ${fmt(credit)})`);
     const newEntry = { id:entrySeq, no:'JE-'+String(entrySeq).padStart(4,'0'), date, desc:String(r.desc).trim(), fromCode:from.code, toCode:to.code,
       amount:debit, subAccountCode:sub.code, costCenterCode:cc.code, image:r.image||null, lines:[{code:from.code,debit,credit:0},{code:to.code,debit:0,credit:debit}] };
+    if(r.compound && Array.isArray(r.lines) && r.lines.length>=2){ newEntry.lines = r.lines; newEntry.compound = true; }
     entries.push(newEntry); addedEntries.push(newEntry);
     entrySeq++; added++;
   });
@@ -2124,7 +2166,7 @@ async function handleEntriesFileImport(){
         (data.subAccounts||[]).forEach(x=>{ if(x.code && !subAccounts.some(s=>s.code===x.code)) subAccounts.push({code:x.code,name:x.name}); });
         (data.costCenters||[]).forEach(x=>{ if(x.code && !costCenters.some(c=>c.code===x.code)) costCenters.push({code:x.code,name:x.name}); });
       }
-      rows = list.map((e,i)=>({row:i+1, date:e.date, desc:e.desc, from:e.fromCode, to:e.toCode, debit:e.amount, credit:e.amount, sub:e.subAccountCode, cc:e.costCenterCode, image:e.image}));
+      rows = list.map((e,i)=>({row:i+1, date:e.date, desc:e.desc, from:e.fromCode, to:e.toCode, debit:e.amount, credit:e.amount, sub:e.subAccountCode, cc:e.costCenterCode, image:e.image, compound:e.compound, lines:e.lines}));
     } else {
       if(typeof XLSX==='undefined'){ st.textContent='تعذر تحميل مكتبة الإكسل — تأكد من اتصال الإنترنت وحاول تاني'; st.className='num diff-bad'; return; }
       const wb = XLSX.read(await file.arrayBuffer(), {type:'array'});
@@ -2177,6 +2219,11 @@ function exportEntriesExcel(){
   const rows = [], merges = [];
   entries.slice().sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id).forEach(e=>{
     const sub = lab(subAccounts,e.subAccountCode), cc = lab(costCenters,e.costCenterCode), r0 = rows.length + 1;
+    if(e.compound && e.lines){
+      e.lines.forEach((l,k)=> rows.push({'التاريخ':k?'':e.date,'البيان':k?'':e.desc,'من حساب':l.debit>0?lab(accounts,l.code):'','الى حساب':l.credit>0?lab(accounts,l.code):'','الفرعي':sub,'مركز التكلفة':cc,'مدين':l.debit>0?l.debit:'','دائن':l.credit>0?l.credit:''}));
+      if(e.lines.length>1) merges.push({s:{r:r0,c:0},e:{r:r0+e.lines.length-1,c:0}}, {s:{r:r0,c:1},e:{r:r0+e.lines.length-1,c:1}});
+      return;
+    }
     rows.push({'التاريخ':e.date,'البيان':e.desc,'من حساب':lab(accounts,e.fromCode),'الى حساب':'','الفرعي':sub,'مركز التكلفة':cc,'مدين':e.amount,'دائن':''});
     rows.push({'التاريخ':'','البيان':'','من حساب':'','الى حساب':lab(accounts,e.toCode),'الفرعي':sub,'مركز التكلفة':cc,'مدين':'','دائن':e.amount});
     merges.push({s:{r:r0,c:0},e:{r:r0+1,c:0}}, {s:{r:r0,c:1},e:{r:r0+1,c:1}});
@@ -2189,7 +2236,7 @@ function exportEntriesExcel(){
 }
 function exportEntriesJson(){
   if(!entries.length){ alert('لا توجد قيود لحفظها'); return; }
-  const data = { entries: entries.map(e=>({no:e.no, date:e.date, desc:e.desc, fromCode:e.fromCode, toCode:e.toCode, amount:e.amount, subAccountCode:e.subAccountCode, costCenterCode:e.costCenterCode, image:e.image||null})),
+  const data = { entries: entries.map(e=>({no:e.no, date:e.date, desc:e.desc, fromCode:e.fromCode, toCode:e.toCode, amount:e.amount, subAccountCode:e.subAccountCode, costCenterCode:e.costCenterCode, image:e.image||null, compound:!!e.compound, lines:e.compound?e.lines:undefined})),
     subAccounts, costCenters };
   downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}), 'قيود-اليومية.json');
 }
@@ -2366,7 +2413,7 @@ function filterJournalEntries(list){
   return list.filter(e=>{
     if(from && e.date < from) return false;
     if(to && e.date > to) return false;
-    if(accCode && e.fromCode!==accCode && e.toCode!==accCode) return false;
+    if(accCode && e.fromCode!==accCode && e.toCode!==accCode && !(e.lines||[]).some(l=>l.code===accCode)) return false;
     if(q){
       const cc = costCenters.find(c=>c.code===e.costCenterCode);
       const hay = normAr((e.desc||'') + ' ' + (cc ? cc.name : ''));
@@ -4054,7 +4101,7 @@ function renderDashboardGeneral(){
   document.getElementById('dbRecent').innerHTML = rec.length ? rec.map(e=>{
     const f = D.accMap[e.fromCode], t = D.accMap[e.toCode], p = (e.date||'').split('-');
     return `<div class="it"><div class="dot"><span>${p[2]||''}</span><span style="font-size:9px;opacity:.7">${p[1]?DB_MONTHS[+p[1]-1].slice(0,4):''}</span></div>
-      <div class="tx"><div class="d">${escHtml(e.desc||'—')}</div><div class="f">${escHtml(f?f.name:'—')} ← ${escHtml(t?t.name:'—')}</div></div><div class="am">${fmt(e.amount||0)}</div></div>`;
+      <div class="tx"><div class="d">${escHtml(e.desc||'—')}</div><div class="f">${entFlowHtml(e,D.accMap)}</div></div><div class="am">${fmt(e.amount||0)}</div></div>`;
   }).join('') : '<div class="db-empty">مفيش قيود لسه</div>';
 }
 
@@ -4334,7 +4381,7 @@ function dbCcHtml(D, name){
   const revItems = Object.keys(D.revBy).map(c=>({code:c,name:nm(c),v:D.revBy[c],label:fmt(D.revBy[c]),color:'#14A08F'})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,6);
   const rank = D.rank.map(r=>({name:r.name, v:Math.max(0,r.net), label:fmt(r.net), color: r.code===dbState.scope.code ? '#AD7F35' : '#9fb3b0'})).slice(0,8);
   const rows = D.st.sort((a,b)=>b.count-a.count).map(s=>`<tr onclick="dbOpenLedger('${s.acc.code}')"><td><div class="db-acc"><span class="acc-name" style="font-size:13.5px">${escHtml(s.acc.name)}</span><span class="c">${escHtml(s.acc.code)}</span></div></td><td>${dbPill(s.acc)}</td><td class="num">${s.count}</td><td class="num">${s.debit?fmt(s.debit):'—'}</td><td class="num">${s.credit?fmt(s.credit):'—'}</td><td style="font-size:12px;white-space:nowrap">${dbAgo(s.last)}</td></tr>`).join('') || '<tr><td colspan="6"><div class="db-empty">مفيش حركة</div></td></tr>';
-  const rec = D.rec.slice(0,6).map(e=>{ const p=(e.date||'').split('-'), f=D.accMap[e.fromCode], t=D.accMap[e.toCode]; return `<div class="it"><div class="dot"><span>${p[2]||''}</span><span style="font-size:9px;opacity:.7">${p[1]?DB_MONTHS[+p[1]-1].slice(0,4):''}</span></div><div class="tx"><div class="d">${escHtml(e.desc||'—')}</div><div class="f">${escHtml(f?f.name:'—')} ← ${escHtml(t?t.name:'—')}</div></div><div class="am">${fmt(e.amount||0)}</div></div>`; }).join('') || '<div class="db-empty">مفيش قيود</div>';
+  const rec = D.rec.slice(0,6).map(e=>{ const p=(e.date||'').split('-'), f=D.accMap[e.fromCode], t=D.accMap[e.toCode]; return `<div class="it"><div class="dot"><span>${p[2]||''}</span><span style="font-size:9px;opacity:.7">${p[1]?DB_MONTHS[+p[1]-1].slice(0,4):''}</span></div><div class="tx"><div class="d">${escHtml(e.desc||'—')}</div><div class="f">${entFlowHtml(e,D.accMap)}</div></div><div class="am">${fmt(e.amount||0)}</div></div>`; }).join('') || '<div class="db-empty">مفيش قيود</div>';
   return `<div class="db-kpis">${k.map(dbKpiHtml).join('')}</div>
   <div class="db-row r-2-1">${dbCardH('الإيرادات والمصروفات شهريًا','مركز التكلفة: '+escHtml(name), dbLegend()+dbBarChart(D.series))}${dbCardH('توزيع المصروفات','أكبر بنود المصروفات على المركز', dbDonut(D.expBy, D.accMap, D.exp, 'إجمالي المصروفات'))}</div>
   <div class="db-row r-1-1">${dbCardH('مصادر الإيرادات','أكتر الحسابات اللي جابت إيراد للمركز', dbHBars(revItems,'#14A08F'))}${dbCardH('مقارنة المراكز بصافي النتيجة','المركز المختار بالذهبي', dbHBars(rank,'#9fb3b0'))}</div>
@@ -4556,6 +4603,163 @@ async function syncCheck(){
   btn.disabled = false;
 }
 coStartup();
+
+</script>
+<script>
+/* ============================================================
+   قيد مزدوج / مركّب — أكتر من طرف مدين و/أو دائن في قيد واحد
+   ============================================================ */
+let cmpEditingId = null, cmpImage = null, cmpLines = [];
+function cmpItems(){ return postableAccounts().map(a=>({code:a.code, name:a.name})); }
+function cmpLabel(it){ return it.code + ' — ' + it.name; }
+
+function cmpNewLine(l){ return {code:(l&&l.code)||'', debit:(l&&l.debit)||'', credit:(l&&l.credit)||''}; }
+function cmpRenderLines(){
+  const body = document.getElementById('cmpLines');
+  body.innerHTML = cmpLines.map((l,i)=>`<tr data-i="${i}">
+    <td style="width:34px;color:var(--ink-faint);font-size:12px;">${i+1}</td>
+    <td><div class="combo" data-cmpcombo="${i}"><input type="text" class="combo-input" autocomplete="off" placeholder="اكتب اسم أو كود الحساب..."><div class="combo-list"></div></div></td>
+    <td style="width:130px;"><input type="number" min="0" step="0.01" class="cmp-d" value="${l.debit}" placeholder="مدين" oninput="cmpSetAmt(${i},'debit',this.value)"></td>
+    <td style="width:130px;"><input type="number" min="0" step="0.01" class="cmp-c" value="${l.credit}" placeholder="دائن" oninput="cmpSetAmt(${i},'credit',this.value)"></td>
+    <td style="width:34px;"><button type="button" class="rm-line" onclick="cmpDelLine(${i})" title="حذف السطر">×</button></td></tr>`).join('');
+  body.querySelectorAll('[data-cmpcombo]').forEach(box=> cmpInitCombo(box, +box.dataset.cmpcombo));
+  cmpStatus();
+}
+function cmpInitCombo(box, i){
+  const inp = box.querySelector('.combo-input'), list = box.querySelector('.combo-list'); let items = [], active = 0;
+  const cur = cmpItems().find(x=>x.code===cmpLines[i].code); if(cur) inp.value = cmpLabel(cur);
+  function draw(){
+    const q = normAr(inp.value), all = cmpItems(); const pre = [], mid = [];
+    if(!q) items = all.slice(); else { all.forEach(it=>{ const n = normAr(it.name), c = normAr(it.code); if(n.startsWith(q)||c.startsWith(q)) pre.push(it); else if(n.includes(q)||c.includes(q)) mid.push(it); }); items = pre.concat(mid); }
+    active = 0;
+    list.innerHTML = items.length ? items.map((it,k)=>`<div class="combo-item${k===0?' active':''}" data-k="${k}"><span class="cc">${it.code}</span><span>${it.name}</span></div>`).join('') : '<div class="combo-empty">لا توجد نتائج مطابقة</div>';
+    box.classList.add('open');
+  }
+  function pick(it){ cmpLines[i].code = it.code; inp.value = cmpLabel(it); box.classList.remove('open','invalid'); cmpStatus(); const d = box.closest('tr').querySelector(cmpLines[i].credit ? '.cmp-c' : '.cmp-d'); if(d) d.focus(); }
+  inp.addEventListener('focus', ()=>{ inp.select(); draw(); });
+  inp.addEventListener('input', ()=>{ cmpLines[i].code = ''; draw(); cmpStatus(); });
+  inp.addEventListener('keydown', ev=>{
+    if(ev.key==='ArrowDown'){ ev.preventDefault(); active = Math.min(active+1, items.length-1); }
+    else if(ev.key==='ArrowUp'){ ev.preventDefault(); active = Math.max(active-1, 0); }
+    else if(ev.key==='Enter'){ ev.preventDefault(); if(box.classList.contains('open') && items[active]) pick(items[active]); return; }
+    else if(ev.key==='Escape'){ ev.stopPropagation(); box.classList.remove('open'); return; }
+    else return;
+    list.querySelectorAll('.combo-item').forEach((el,k)=>el.classList.toggle('active', k===active));
+  });
+  list.addEventListener('mousedown', ev=>{ const el = ev.target.closest('.combo-item'); if(!el) return; ev.preventDefault(); pick(items[+el.dataset.k]); });
+  inp.addEventListener('blur', ()=>{ box.classList.remove('open'); if(!cmpLines[i].code && inp.value.trim()){ const q = normAr(inp.value), ex = cmpItems().filter(it=>normAr(it.name)===q||normAr(it.code)===q); if(ex.length===1) pick(ex[0]); else box.classList.add('invalid'); } });
+}
+function cmpSetAmt(i, side, v){
+  cmpLines[i][side] = v;
+  if(parseFloat(v) > 0){ const other = side==='debit' ? 'credit' : 'debit'; if(cmpLines[i][other] !== ''){ cmpLines[i][other] = ''; const inp = document.querySelector(`#cmpLines tr[data-i="${i}"] .${other==='debit'?'cmp-d':'cmp-c'}`); if(inp) inp.value = ''; } }
+  cmpStatus();
+}
+function cmpAddLine(){ cmpLines.push(cmpNewLine()); cmpRenderLines(); const rows = document.querySelectorAll('#cmpLines tr'); const last = rows[rows.length-1]; if(last) last.querySelector('.combo-input').focus(); }
+function cmpDelLine(i){ if(cmpLines.length <= 2){ showToast('القيد لازم يكون فيه سطرين على الأقل', true); return; } cmpLines.splice(i,1); cmpRenderLines(); }
+function cmpTotals(){
+  let d = 0, c = 0; cmpLines.forEach(l=>{ d += parseFloat(l.debit)||0; c += parseFloat(l.credit)||0; });
+  return {d: Math.round(d*100)/100, c: Math.round(c*100)/100};
+}
+function cmpBalance(){
+  const t = cmpTotals(), diff = Math.round((t.d - t.c)*100)/100; if(Math.abs(diff) < 0.005){ showToast('القيد متزن بالفعل'); return; }
+  const side = diff > 0 ? 'credit' : 'debit', amt = Math.abs(diff);
+  let idx = cmpLines.findIndex(l=> l.code && !(parseFloat(l.debit)>0) && !(parseFloat(l.credit)>0));
+  if(idx < 0){ cmpLines.push(cmpNewLine()); idx = cmpLines.length-1; }
+  cmpLines[idx][side] = String(amt); cmpRenderLines();
+  const rows = document.querySelectorAll('#cmpLines tr'); const inp = rows[idx] && rows[idx].querySelector('.combo-input'); if(inp && !cmpLines[idx].code) inp.focus();
+}
+function cmpStatus(){
+  const date = document.getElementById('cmpDate').value, desc = document.getElementById('cmpDesc').value.trim(), cc = document.getElementById('cmpCC').value;
+  const t = cmpTotals(), diff = Math.round((t.d - t.c)*100)/100;
+  document.getElementById('cmpTotD').textContent = fmt(t.d); document.getElementById('cmpTotC').textContent = fmt(t.c);
+  const used = cmpLines.filter(l=> l.code || parseFloat(l.debit)>0 || parseFloat(l.credit)>0);
+  const dl = used.filter(l=>parseFloat(l.debit)>0), cl = used.filter(l=>parseFloat(l.credit)>0);
+  let msg = null;
+  if(!date) msg = 'من فضلك أدخل التاريخ'; else if(!desc) msg = 'من فضلك أدخل البيان'; else if(!cc) msg = 'من فضلك اختر مركز التكلفة';
+  else if(used.some(l=>!l.code)) msg = 'فيه سطر مكتوب فيه مبلغ ومفيش حساب مختار';
+  else if(used.some(l=>!(parseFloat(l.debit)>0) && !(parseFloat(l.credit)>0))) msg = 'فيه سطر فيه حساب ومفيش مبلغ';
+  else if(!dl.length) msg = 'لازم يكون فيه طرف مدين واحد على الأقل';
+  else if(!cl.length) msg = 'لازم يكون فيه طرف دائن واحد على الأقل';
+  else if(Math.abs(diff) >= 0.005) msg = 'القيد غير متزن — الفرق ' + fmt(Math.abs(diff)) + (diff>0 ? ' (المدين أكبر)' : ' (الدائن أكبر)');
+  const el = document.getElementById('cmpMsg'), ok = !msg;
+  el.textContent = ok ? 'القيد متزن ✓ جاهز للترحيل' : msg; el.className = 'num ' + (ok ? 'diff-ok' : 'diff-bad');
+  document.getElementById('cmpSave').disabled = !ok; document.getElementById('cmpBalBtn').style.display = (!ok && Math.abs(diff)>=0.005) ? '' : 'none';
+  return ok;
+}
+function cmpFillSelects(){
+  const opt = (list, v) => '<option value="">— اختر —</option>' + list.map(x=>`<option value="${escHtml(x.code)}" ${x.code===v?'selected':''}>${escHtml(x.code)} — ${escHtml(x.name)}</option>`).join('');
+  const e = cmpEditingId ? entries.find(x=>x.id===cmpEditingId) : null;
+  document.getElementById('cmpSub').innerHTML = opt(subAccounts, e && e.subAccountCode);
+  document.getElementById('cmpCC').innerHTML = opt(costCenters, e && e.costCenterCode);
+}
+function openCompoundModal(editId){
+  const e = editId ? entries.find(x=>x.id===editId) : null; cmpEditingId = e ? e.id : null;
+  document.getElementById('cmpTitle').textContent = e ? 'تعديل القيد المركّب ' + e.no : 'قيد مزدوج (مركّب)';
+  document.getElementById('cmpSave').textContent = e ? 'حفظ التعديل' : 'ترحيل';
+  document.getElementById('cmpDate').value = e ? e.date : new Date().toISOString().slice(0,10);
+  document.getElementById('cmpDesc').value = e ? e.desc : '';
+  cmpFillSelects();
+  cmpLines = e && e.lines ? e.lines.map(l=>cmpNewLine({code:l.code, debit:l.debit||'', credit:l.credit||''})) : [cmpNewLine(), cmpNewLine(), cmpNewLine()];
+  cmpImage = e && e.image ? e.image : null; cmpRenderImage();
+  cmpRenderLines(); document.getElementById('compoundOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('cmpDesc').focus(), 30);
+}
+function cmpRenderImage(){
+  document.getElementById('cmpImgPrev').innerHTML = cmpImage ? `<img src="${cmpImage}" style="max-height:90px;border:1px solid var(--border);border-radius:8px;display:block;"><button type="button" class="btn-danger-text" onclick="cmpImage=null;document.getElementById('cmpImgIn').value='';cmpRenderImage()">إزالة المرفق</button>` : '';
+}
+async function cmpPickImage(inp){ const f = inp.files[0]; if(!f) return; try{ cmpImage = await compressImage(f); cmpRenderImage(); }catch(err){ alert('تعذر قراءة الصورة: ' + err.message); inp.value = ''; } }
+function cmpSave(){
+  if(!cmpStatus()){ alert('لا يمكن الترحيل — راجع بيانات القيد'); return; }
+  const date = document.getElementById('cmpDate').value, desc = document.getElementById('cmpDesc').value.trim();
+  const subAccountCode = document.getElementById('cmpSub').value, costCenterCode = document.getElementById('cmpCC').value;
+  const lines = cmpLines.filter(l=>l.code).map(l=>({code:l.code, debit:Math.round((parseFloat(l.debit)||0)*100)/100, credit:Math.round((parseFloat(l.credit)||0)*100)/100}));
+  const total = Math.round(lines.reduce((s,l)=>s+l.debit,0)*100)/100;
+  const first = side => (lines.find(l=>l[side]>0)||{}).code;
+  const data = {date, desc, fromCode:first('debit'), toCode:first('credit'), amount:total, subAccountCode, costCenterCode, lines, image:cmpImage, compound:true};
+  const cur = cmpEditingId ? entries.find(x=>x.id===cmpEditingId) : null; let saved;
+  if(cur){ Object.assign(cur, data); saved = cur; }
+  else { saved = Object.assign({id:entrySeq, no:'JE-'+String(entrySeq).padStart(4,'0')}, data); entries.push(saved); entrySeq++; }
+  cmpEditingId = null; closeModal('compoundOverlay'); renderAll(); pushEntryRemote(saved);
+  showToast('تم ترحيل القيد المركّب (' + lines.length + ' أطراف)' + (subAccountCode ? '' : ' — تنبيه: لسه مكتبتش البند الفرعي'), !subAccountCode);
+}
+document.addEventListener('input', ev=>{ if(ev.target && ev.target.closest && ev.target.closest('#compoundOverlay') && ['cmpDate','cmpDesc'].includes(ev.target.id)) cmpStatus(); });
+document.addEventListener('change', ev=>{ if(ev.target && ev.target.closest && ev.target.closest('#compoundOverlay')) cmpStatus(); });
+
+/* ---- ربط القيد المركّب بباقي النظام ---- */
+const _openEntryModalSimple = openEntryModal;
+openEntryModal = function(editId){
+  const e = editId ? entries.find(x=>x.id===editId) : null;
+  if(e && e.compound) return openCompoundModal(editId);
+  return _openEntryModalSimple(editId);
+};
+function entFlowHtml(e, map){
+  if(e.compound){ const d = (e.lines||[]).filter(l=>l.debit>0).length, c = (e.lines||[]).filter(l=>l.credit>0).length; return 'قيد مركّب (' + d + ' مدين / ' + c + ' دائن)'; }
+  const f = map[e.fromCode], t = map[e.toCode]; return escHtml(f?f.name:'—') + ' ← ' + escHtml(t?t.name:'—');
+}
+function cmpAccLines(e, side, color){
+  return (e.lines||[]).filter(l=>l[side]>0).map(l=>{ const a = accounts.find(x=>x.code===l.code); return `<div style="display:flex;justify-content:space-between;gap:10px;padding:1px 0;"><span>${a ? a.code+' — '+a.name : l.code}</span><b class="num" style="font-size:12px;color:${color}">${fmt(l[side])}</b></div>`; }).join('');
+}
+renderJournal = function(){
+  const tbody = document.getElementById('journalTbody'); tbody.innerHTML = '';
+  const filtered = filterJournalEntries(entries);
+  if(entries.length===0){ tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">لا توجد قيود بعد — اضغط "إضافة قيد" لتسجيل أول عملية</div></td></tr>`; return; }
+  if(filtered.length===0){ tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">لا توجد نتائج مطابقة لبحثك</div></td></tr>`; return; }
+  const dash = '<span class="muted">—</span>';
+  filtered.slice().sort((a,b)=> a.date.localeCompare(b.date) || a.id-b.id).forEach(e=>{
+    const sub = subAccounts.find(s=>s.code===e.subAccountCode), cc = costCenters.find(c=>c.code===e.costCenterCode);
+    const subTxt = sub ? sub.name : dash, ccTxt = cc ? cc.name : dash, tr = document.createElement('tr'); tr.className = 'je-row';
+    let fromCell, toCell, badge = '';
+    if(e.compound){ fromCell = cmpAccLines(e,'debit','var(--primary)'); toCell = cmpAccLines(e,'credit','var(--gold)'); badge = ' <span class="pill pill-group" style="font-size:10.5px;">قيد مركّب</span>'; }
+    else { const f = accounts.find(a=>a.code===e.fromCode), t = accounts.find(a=>a.code===e.toCode); fromCell = f ? f.code+' — '+f.name : e.fromCode; toCell = t ? t.code+' — '+t.name : e.toCode; }
+    tr.innerHTML = `
+      <td class="num date-col">${e.date}</td>
+      <td>${e.desc}${badge}<div class="muted" style="font-size:11px;margin-top:3px;">${e.no}</div></td>
+      <td>${fromCell}</td><td>${toCell}</td><td>${subTxt}</td><td>${ccTxt}</td>
+      <td class="num debit">${fmt(e.amount)}</td><td class="num credit">${fmt(e.compound ? (e.lines||[]).reduce((s,l)=>s+(l.credit||0),0) : e.amount)}</td>
+      <td style="white-space:nowrap"><button class="btn-edit-text" onclick="openEntryModal(${e.id})">تعديل</button> <button class="btn-danger-text" onclick="deleteEntry(${e.id})">حذف</button>${e.image?`<div><button class="btn-edit-text" onclick="viewEntryImage(${e.id})">📎 عرض المرفق</button></div>`:''}</td>`;
+    tbody.appendChild(tr);
+  });
+};
 
 </script>
 </body>
