@@ -224,6 +224,16 @@
   .kpi .value.credit{ color:var(--credit); }
   .kpi .value.ok{ color:var(--primary-dark); }
   .kpi .value.bad{ color:var(--danger); }
+  /* مربعات رصيد الخزنة الصغيرة في دفتر الأستاذ — بتظهر على الشاشة بس وبتختفي في الطباعة */
+  .ledger-treasury-boxes{ display:none; grid-template-columns:repeat(3,1fr); gap:10px; margin:-8px 0 20px; }
+  .ledger-treasury-boxes.show{ display:grid; }
+  .ltb{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-s); padding:9px 12px; }
+  .ltb .t{ font-size:11px; font-weight:700; color:var(--ink-faint); margin-bottom:4px; }
+  .ltb .v{ font-size:17px; font-weight:700; color:var(--ink); }
+  .ltb.total{ background:var(--primary-soft); border-color:var(--primary); }
+  .ltb.total .t, .ltb.total .v{ color:var(--primary-dark); }
+  @media (max-width:700px){ .ledger-treasury-boxes.show{ grid-template-columns:1fr; } }
+  @media print{ .ledger-treasury-boxes{ display:none !important; } }
 
   .status-banner{
     margin-top:16px; padding:12px 16px; border-radius:var(--radius-m);
@@ -860,7 +870,21 @@
           <button class="btn btn-primary" onclick="exportLedgerPdf()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V9M7 14l5-5 5 5M5 3h14"/></svg> حفظ PDF</button>
         </div>
       </div>
+      <div class="card" style="padding:14px 16px; margin-bottom:14px;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="muted" style="font-size:12px; white-space:nowrap;">من تاريخ</span>
+            <input type="date" id="ledgerDateFrom" class="select-inline" style="min-width:150px;" oninput="renderLedger()">
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="muted" style="font-size:12px; white-space:nowrap;">إلى تاريخ</span>
+            <input type="date" id="ledgerDateTo" class="select-inline" style="min-width:150px;" oninput="renderLedger()">
+          </div>
+          <button class="btn btn-ghost" onclick="clearLedgerDates()">مسح الفترة</button>
+        </div>
+      </div>
       <div class="kpi-row" id="ledgerKpis"></div>
+      <div class="ledger-treasury-boxes" id="ledgerTreasuryBoxes"></div>
       <div class="card">
         <div class="table-wrap">
           <table>
@@ -2614,6 +2638,50 @@ function populateLedgerSelect(){
   hid.value = current;
   if(box && box._set) box._set(current);
 }
+/* فلتر الفترة في دفتر الأستاذ */
+function ledgerRange(){
+  const f = document.getElementById('ledgerDateFrom'), t = document.getElementById('ledgerDateTo');
+  return {from: f ? f.value : '', to: t ? t.value : ''};
+}
+function clearLedgerDates(){
+  const f = document.getElementById('ledgerDateFrom'), t = document.getElementById('ledgerDateTo');
+  if(f) f.value = ''; if(t) t.value = '';
+  renderLedger();
+}
+// بتقسّم حركات الحساب: رصيد افتتاحي (قبل "من تاريخ") + حركات الفترة المحددة
+function ledgerSplit(acc){
+  const {from, to} = ledgerRange();
+  const inc = (acc.type==='asset'||acc.type==='expense');
+  let opening = 0; const rows = [];
+  ledgerRowsFor(acc).forEach(r=>{
+    if(from && r.date < from){ opening += inc ? (r.debit-r.credit) : (r.credit-r.debit); return; }
+    if(to && r.date > to) return;
+    rows.push(r);
+  });
+  return {rows, opening, from, to};
+}
+function ledgerRangeText(from, to){
+  if(from && to) return 'من ' + from + ' إلى ' + to;
+  if(from) return 'من ' + from;
+  if(to) return 'حتى ' + to;
+  return '';
+}
+function isTreasuryAccount(acc){
+  if(!acc) return false;
+  const k = fnKey(acc.name);
+  return acc.code === '1100' || k.includes('khaznateldeep') || k.includes('خزنةالديب');
+}
+function renderLedgerTreasuryBoxes(acc, split, periodBal){
+  const box = document.getElementById('ledgerTreasuryBoxes');
+  if(!box) return;
+  if(!isTreasuryAccount(acc)){ box.classList.remove('show'); box.innerHTML = ''; return; }
+  const rt = ledgerRangeText(split.from, split.to);
+  box.innerHTML = `
+    <div class="ltb"><div class="t">رصيد الخزنة قبل ${split.from ? escHtml(split.from) : 'بداية الفترة'}</div><div class="v num">${fmt(split.opening)}</div></div>
+    <div class="ltb"><div class="t">رصيد الخزنة في الفترة${rt ? ' (' + escHtml(rt) + ')' : ''}</div><div class="v num">${fmt(periodBal)}</div></div>
+    <div class="ltb total"><div class="t">رصيد الخزنة الإجمالي (الرصيدين معًا)</div><div class="v num">${fmt(split.opening + periodBal)}</div></div>`;
+  box.classList.add('show');
+}
 function renderLedger(){
   const sel = document.getElementById('ledgerAccountSelect');
   const code = sel.value;
@@ -2621,9 +2689,11 @@ function renderLedger(){
   const tbody = document.getElementById('ledgerTbody');
   const kpis = document.getElementById('ledgerKpis');
   tbody.innerHTML = '';
-  if(!acc){ kpis.innerHTML=''; tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state">لا توجد حسابات عليها قيود حتى الآن</div></td></tr>`; return; }
+  if(!acc){ kpis.innerHTML=''; renderLedgerTreasuryBoxes(null); tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state">لا توجد حسابات عليها قيود حتى الآن</div></td></tr>`; return; }
 
-  const rows = ledgerRowsFor(acc);
+  const split = ledgerSplit(acc);
+  const rows = split.rows;
+  const hasRange = !!(split.from || split.to);
 
   const increases = (acc.type==='asset'||acc.type==='expense');
   let running = 0, totalD=0, totalC=0;
@@ -2646,8 +2716,9 @@ function renderLedger(){
   kpis.innerHTML = `
     <div class="kpi kpi-debit"><div class="label">${REPORT_SUM_ICONS.debit}إجمالي مدين</div><div class="value num">${fmt(totalD)}</div></div>
     <div class="kpi kpi-credit"><div class="label">${REPORT_SUM_ICONS.credit}إجمالي دائن</div><div class="value num">${fmt(totalC)}</div></div>
-    <div class="kpi kpi-ok"><div class="label">${REPORT_SUM_ICONS.balance}الرصيد الحالي — ${acc.name}</div><div class="value num">${fmt(running)}</div></div>
+    <div class="kpi kpi-ok"><div class="label">${REPORT_SUM_ICONS.balance}${hasRange ? 'رصيد الفترة' : 'الرصيد الحالي'} — ${acc.name}</div><div class="value num">${fmt(running)}</div></div>
   `;
+  renderLedgerTreasuryBoxes(acc, split, running);
 }
 
 /* ============================================================
@@ -2762,7 +2833,8 @@ function getLedgerData(){
   const code = document.getElementById('ledgerAccountSelect').value;
   const acc = accounts.find(a=>a.code===code);
   if(!acc) return null;
-  const rows = ledgerRowsFor(acc);
+  const split = ledgerSplit(acc);
+  const rows = split.rows;
   const increases = (acc.type==='asset'||acc.type==='expense');
   let running = 0, totalD = 0, totalC = 0;
   rows.forEach(r=>{
@@ -2770,7 +2842,7 @@ function getLedgerData(){
     totalD += r.debit; totalC += r.credit;
     r.balance = running;
   });
-  return {acc, rows, totalD, totalC, balance: running};
+  return {acc, rows, totalD, totalC, balance: running, from: split.from, to: split.to};
 }
 function ledgerFileName(acc, ext){
   return ('دفتر-الأستاذ-' + acc.code + '-' + acc.name).replace(/[\\\/:*?"<>|\s]+/g,'-') + '.' + ext;
@@ -2785,17 +2857,18 @@ function exportLedgerExcel(){
     [company],
     ['دفتر الأستاذ'],
     ['الحساب', d.acc.code + ' — ' + d.acc.name],
-    ['تاريخ التقرير', new Date().toLocaleDateString('en-GB')],
-    [],
-    ['التاريخ','البيان','مدين','دائن']
+    ['تاريخ التقرير', new Date().toLocaleDateString('en-GB')]
   ];
+  if(d.from || d.to) aoa.push(['الفترة', ledgerRangeText(d.from, d.to)]);
+  aoa.push([]);
+  aoa.push(['التاريخ','البيان','مدين','دائن']);
   d.rows.forEach(r=> aoa.push([r.date, r.desc, r.debit||'', r.credit||'']));
   aoa.push(['','الإجمالي', d.totalD, d.totalC]);
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   ws['!cols'] = [12,44,16,16].map(w=>({wch:w}));
   ws['!merges'] = [{s:{r:0,c:0},e:{r:0,c:3}},{s:{r:1,c:0},e:{r:1,c:3}}];
   // تنسيق الأرقام (خانتين عشريتين)
-  for(let R=6; R<aoa.length; R++){
+  for(let R=0; R<aoa.length; R++){
     for(let C=2; C<=3; C++){
       const cell = ws[XLSX.utils.encode_cell({r:R,c:C})];
       if(cell && typeof cell.v==='number') cell.z = '#,##0.00';
@@ -2820,10 +2893,10 @@ function exportLedgerPdf(){
   </table>`;
   const sumCardsHtml = reportSumCardHtml('debit','إجمالي مدين', fmt(d.totalD))
     + reportSumCardHtml('credit','إجمالي دائن', fmt(d.totalC))
-    + reportSumCardHtml('balance','الرصيد الحالي', fmt(d.balance));
+    + reportSumCardHtml('balance',(d.from||d.to) ? 'رصيد الفترة' : 'الرصيد الحالي', fmt(d.balance));
   const html = buildReportDocument({
     title: 'دفتر الأستاذ',
-    subtitleHtml: `الحساب: <b>${escHtml(d.acc.code)} — ${escHtml(d.acc.name)}</b>`,
+    subtitleHtml: `الحساب: <b>${escHtml(d.acc.code)} — ${escHtml(d.acc.name)}</b>` + ((d.from||d.to) ? `<br>الفترة: <b>${escHtml(ledgerRangeText(d.from, d.to))}</b>` : ''),
     metaHtml: `تاريخ التقرير: ${new Date().toLocaleDateString('en-GB')}<br>عدد الحركات: ${d.rows.length}`,
     sumCardsHtml,
     tableHtml,
