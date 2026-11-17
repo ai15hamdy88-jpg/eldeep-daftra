@@ -316,8 +316,9 @@
 
   .muted{ color:var(--ink-faint); }
 
-  #loginOverlay{display:none !important;position:fixed;inset:0;z-index:99999;background:linear-gradient(160deg,#0A423E,#0E5C56 60%,#13756d);display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit}
+  #loginOverlay{position:fixed;inset:0;z-index:99999;background:linear-gradient(160deg,#0A423E,#0E5C56 60%,#13756d);display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit}
   #loginOverlay.hidden{display:none}
+  html.nologin #loginOverlay{display:none !important}
   .login-card{background:#fff;border-radius:16px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center}
   .login-card h1{margin:0 0 4px;font-size:22px;color:#0E5C56}
   .login-card p{margin:0 0 22px;color:#5E7371;font-size:13px}
@@ -497,11 +498,12 @@
 </style>
 </head>
 <body>
+<script>if(localStorage.getItem("daftara_login_mode")!=="on")document.documentElement.classList.add("nologin");</script>
 <div id="loginOverlay">
   <div class="login-card">
     <h1>🔐 تسجيل الدخول</h1>
     <p>نظام دفترة المحاسبي</p>
-    <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" autocomplete="username">
+    <input type="text" id="loginEmail" placeholder="اسم المستخدم أو البريد الإلكتروني" autocomplete="username" autocapitalize="none" spellcheck="false">
     <input type="password" id="loginPass" placeholder="كلمة المرور" autocomplete="current-password">
     <button class="main" id="loginBtn">دخول</button>
     <div id="loginMsg"></div>
@@ -1127,6 +1129,45 @@
           </div>
         </div>
         <button class="btn btn-primary" onclick="saveCompanyInfo()">حفظ بيانات الشركة</button>
+      </div>
+
+      <div class="card" style="padding:20px; max-width:640px; margin-top:18px;">
+        <div class="section-title"><span class="dot" style="background:#8B6BB1"></span>تسجيل الدخول</div>
+        <div id="lmStatus" style="padding:10px 12px;border-radius:10px;font-size:13.5px;margin-bottom:12px;"></div>
+        <p style="font-size:12.5px;color:var(--ink-faint);margin:0 0 12px;line-height:1.8;">اختار إن السيستم يفتح <b>بيوزر وباسورد</b> أو <b>مفتوح من غير دخول</b>. الإعداد ده خاص بالجهاز اللي بتفتح منه.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="lmEnableBtn" onclick="lmShowEnable()">🔒 تفعيل تسجيل الدخول</button>
+          <button class="btn btn-ghost" id="lmDisableBtn" onclick="lmDisable()" style="display:none;">🔓 إيقاف تسجيل الدخول</button>
+        </div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-soft);">
+          <div style="font-size:13px;font-weight:700;margin-bottom:6px;">🕒 القفل التلقائي</div>
+          <div style="font-size:12.5px;color:var(--ink-faint);margin-bottom:10px;line-height:1.8;">لو السيستم فضل من غير استخدام المدة دي، بيتقفل لوحده ولازم تدخل اليوزر والباسورد تاني. بيشتغل لما <b>تسجيل الدخول يكون شغّال</b>.</div>
+          <select id="lockSel" class="rc-per" style="padding:9px 12px;" onchange="lockSetMinutes(this.value)">
+            <option value="5">بعد 5 دقايق</option><option value="15">بعد 15 دقيقة</option><option value="30">بعد 30 دقيقة (الافتراضي)</option><option value="60">بعد ساعة</option><option value="0">بدون قفل تلقائي</option>
+          </select>
+        </div>
+        <div id="lmEnableBox" style="display:none;margin-top:14px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface-alt);">
+          <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;">اكتب اسم المستخدم (أو الإيميل) وباسورد مستخدم موجود. هنتأكد إنهم شغالين قبل التفعيل عشان ما تتقفلش بره.</div>
+          <div class="field-row">
+            <div class="field"><label>اسم المستخدم أو البريد</label><input type="text" id="lmEmail" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
+            <div class="field"><label>كلمة المرور</label><input type="password" id="lmPass" autocomplete="current-password" onkeydown="if(event.key==='Enter')lmEnable()"></div>
+          </div>
+          <button class="btn btn-primary" id="lmGo" onclick="lmEnable()">تحقق وفعّل</button>
+          <div id="lmMsg" style="min-height:20px;margin-top:8px;font-size:13px;font-weight:600;"></div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:20px; max-width:640px; margin-top:18px;">
+        <div class="section-title"><span class="dot" style="background:#14A08F"></span>المستخدمين</div>
+        <p style="font-size:12.5px;color:var(--ink-faint);margin:0 0 12px;line-height:1.8;">ضيف مستخدم باسم مستخدم وباسورد، ويدخل بيهم من شاشة الدخول. (محتاج Email/Password مفعّل في Firebase Authentication.)</p>
+        <div class="field-row">
+          <div class="field"><label>اسم المستخدم</label><input type="text" id="usrName" dir="ltr" placeholder="مثال: ahmed" autocapitalize="none" spellcheck="false" autocomplete="off"></div>
+          <div class="field"><label>كلمة المرور</label><input type="password" id="usrPass" autocomplete="new-password" placeholder="6 حروف أو أرقام على الأقل" onkeydown="if(event.key==='Enter')usrAdd()"></div>
+        </div>
+        <button class="btn btn-primary" id="usrGo" onclick="usrAdd()">+ إضافة مستخدم</button>
+        <div id="usrMsg" style="min-height:20px;margin-top:8px;font-size:13px;font-weight:600;"></div>
+        <div style="font-size:13px;font-weight:700;margin-top:10px;">المستخدمين المضافين</div>
+        <div id="usrList"></div>
       </div>
 
       <div class="card" style="padding:20px; max-width:640px; margin-top:18px;">
@@ -3394,7 +3435,7 @@ function _authErr(e){
   return 'تعذر تسجيل الدخول (' + c + ')';
 }
 async function doLogin(){
-  const email = document.getElementById('loginEmail').value.trim();
+  const email = toLoginEmail(document.getElementById('loginEmail').value);
   const pass  = document.getElementById('loginPass').value;
   if(!email || !pass){ _loginMsg('اكتب الإيميل وكلمة المرور'); return; }
   const btn = document.getElementById('loginBtn'); btn.disabled = true; _loginMsg('');
@@ -3407,10 +3448,21 @@ document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==
 document.getElementById('loginForgot').addEventListener('click', async ()=>{
   const email = document.getElementById('loginEmail').value.trim();
   if(!email){ _loginMsg('اكتب الإيميل الأول وبعدين اضغط نسيت كلمة المرور'); return; }
+  if(!email.includes('@')){ _loginMsg('المستخدمين بالاسم مفيهمش إيميل — اطلب من المدير يغيّر كلمة المرور'); return; }
   try{ await auth.sendPasswordResetEmail(email); _loginMsg('اتبعتلك رسالة على الإيميل لتغيير كلمة المرور', true); }
   catch(e){ _loginMsg(_authErr(e)); }
 });
-if(!_syncStarted){ _syncStarted = true; startFirestoreSync(); }
+if(localStorage.getItem('daftara_login_mode') === 'on'){
+  // تسجيل الدخول شغّال: المزامنة مبتبدأ إلا بعد الدخول
+  auth.onAuthStateChanged(user=>{
+    const ov = document.getElementById('loginOverlay');
+    if(user){ ov.classList.add('hidden'); if(!_syncStarted){ _syncStarted = true; startFirestoreSync(); } }
+    else { ov.classList.remove('hidden'); }
+  });
+} else {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  if(!_syncStarted){ _syncStarted = true; startFirestoreSync(); }
+}
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW',e)));
 }
@@ -4800,6 +4852,148 @@ renderJournal = function(){
     });
   });
 };
+
+</script>
+<script>
+/* ============================================================
+   وضع تسجيل الدخول (اختياري) — بيتحدد من الإعدادات لكل جهاز
+   ============================================================ */
+const LOGIN_MODE_KEY = 'daftara_login_mode';
+const loginIsOn = () => localStorage.getItem(LOGIN_MODE_KEY) === 'on';
+function renderLoginCard(user){
+  const on = loginIsOn(), st = document.getElementById('lmStatus'); if(!st) return;
+  const who = on ? (user ? ' — داخل بـ ' + escHtml(user.email || '') : '') : '';
+  st.innerHTML = on ? '🔒 <b>تسجيل الدخول شغّال</b> على الجهاز ده' + who : '🔓 <b>تسجيل الدخول موقوف</b> — السيستم بيفتح مباشرة';
+  st.style.background = on ? '#E3F3EE' : '#F6EEDC'; st.style.color = on ? '#0E6B5F' : '#7a5a1c';
+  document.getElementById('lmEnableBox').style.display = 'none';
+  document.getElementById('lmEnableBtn').style.display = on ? 'none' : '';
+  document.getElementById('lmDisableBtn').style.display = on ? '' : 'none';
+}
+function lmShowEnable(){ const b = document.getElementById('lmEnableBox'); b.style.display = b.style.display === 'none' ? '' : 'none'; document.getElementById('lmMsg').textContent = ''; setTimeout(()=>document.getElementById('lmEmail').focus(), 30); }
+async function lmEnable(){
+  const email = toLoginEmail(document.getElementById('lmEmail').value), pass = document.getElementById('lmPass').value, msg = document.getElementById('lmMsg'), btn = document.getElementById('lmGo');
+  if(!email || !pass){ msg.textContent = 'اكتب الإيميل وكلمة المرور'; return; }
+  btn.disabled = true; msg.style.color = 'var(--ink-faint)'; msg.textContent = 'جاري التحقق…';
+  try{
+    await auth.signInWithEmailAndPassword(email, pass);          // نتأكد إن الحساب شغال قبل التفعيل عشان ما تتقفلش بره
+    localStorage.setItem(LOGIN_MODE_KEY, 'on'); try{ localStorage.setItem('daftara_last_activity', String(Date.now())); }catch(e){}
+    msg.style.color = '#0E6B5F'; msg.textContent = '✅ اتفعّل — جاري إعادة التحميل…'; setTimeout(()=>location.reload(), 700);
+  }catch(e){ msg.style.color = '#A34632'; msg.textContent = _authErr(e); btn.disabled = false; }
+}
+function lmDisable(){
+  if(!confirm('إيقاف تسجيل الدخول على الجهاز ده؟\nالسيستم هيفتح من غير يوزر وباسورد.')) return;
+  localStorage.setItem(LOGIN_MODE_KEY, 'off'); showToast('تم إيقاف تسجيل الدخول — جاري إعادة التحميل…'); setTimeout(()=>location.reload(), 600);
+}
+(function lmInit(){
+  const chip = document.createElement('div'); chip.className = 'date-chip'; chip.id = 'logoutChip'; chip.title = 'تسجيل الخروج'; chip.style.cssText = 'cursor:pointer;display:none'; chip.textContent = '🚪 خروج';
+  chip.addEventListener('click', ()=>{ if(confirm('تسجيل الخروج من الجهاز ده؟')) auth.signOut().then(()=>location.reload()); });
+  const sc = document.getElementById('syncChip'); if(sc && sc.parentNode) sc.parentNode.insertBefore(chip, sc.nextSibling);
+  if(loginIsOn()) auth.onAuthStateChanged(u=>{ chip.style.display = u ? '' : 'none'; renderLoginCard(u); });
+  renderLoginCard(null);
+})();
+
+</script>
+<script>
+/* ============================================================
+   القفل التلقائي بعد فترة عدم نشاط (شغّال مع تسجيل الدخول)
+   ============================================================ */
+const LOCK_MIN_KEY = 'daftara_autolock_min', LOCK_ACT_KEY = 'daftara_last_activity', LOCK_WHY_KEY = 'daftara_locked_reason';
+const lockMinutes = () => { const v = localStorage.getItem(LOCK_MIN_KEY); return v === null ? 30 : (parseFloat(v) || 0); };   // 0 = متوقف
+const lockLastAct = () => parseInt(localStorage.getItem(LOCK_ACT_KEY) || '0', 10) || 0;
+let _lockUser = null, _lockWrote = 0, _lockFirst = true;
+const _lockLoadAct = lockLastAct();   // آخر نشاط قبل ما الصفحة تتفتح
+function lockTouch(force){ const n = Date.now(); if(force || n - _lockWrote > 4000){ _lockWrote = n; try{ localStorage.setItem(LOCK_ACT_KEY, String(n)); }catch(e){} } }
+function lockSetMinutes(v){ localStorage.setItem(LOCK_MIN_KEY, v); lockTouch(true); showToast(parseFloat(v) ? 'القفل التلقائي بعد ' + v + ' دقيقة من عدم النشاط' : 'تم إيقاف القفل التلقائي'); lockHideWarn(); }
+function lockShowWarn(sec){
+  let w = document.getElementById('lockWarn');
+  if(!w){ w = document.createElement('div'); w.id = 'lockWarn'; w.style.cssText = 'position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:9998;background:#10211f;color:#fff;padding:11px 18px;border-radius:12px;font-size:13.5px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.35);display:flex;gap:12px;align-items:center;'; document.body.appendChild(w); }
+  w.innerHTML = '🔒 السيستم هيتقفل بعد ' + sec + ' ثانية لعدم النشاط <button style="border:none;background:#14A08F;color:#fff;border-radius:8px;padding:5px 12px;font:inherit;cursor:pointer;" onclick="lockTouch(true);lockHideWarn()">أنا موجود</button>';
+}
+function lockHideWarn(){ const w = document.getElementById('lockWarn'); if(w) w.remove(); }
+function lockNow(){
+  lockHideWarn();
+  try{ localStorage.setItem(LOCK_WHY_KEY, 'idle'); }catch(e){}
+  const go = ()=> location.reload();
+  try{ auth.signOut().then(go, go); }catch(e){ go(); }
+}
+function lockCheck(){
+  if(!loginIsOn() || !_lockUser) return;
+  const m = lockMinutes(); if(!m){ lockHideWarn(); return; }
+  const limit = m * 60000, idle = Date.now() - lockLastAct(), left = limit - idle;
+  if(left <= 0) return lockNow();
+  if(left <= 60000) lockShowWarn(Math.ceil(left/1000)); else lockHideWarn();
+}
+(function lockInit(){
+  if(!loginIsOn()) return;
+  ['mousemove','mousedown','keydown','touchstart','scroll','wheel','click'].forEach(ev=> document.addEventListener(ev, ()=>lockTouch(false), {passive:true, capture:true}));
+  setInterval(lockCheck, 5000);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) lockCheck(); });
+  window.addEventListener('focus', lockCheck);
+  window.addEventListener('storage', e=>{ if(e.key === LOCK_ACT_KEY) lockHideWarn(); });
+  auth.onAuthStateChanged(user=>{
+    _lockUser = user;
+    if(user && _lockFirst){
+      _lockFirst = false; const m = lockMinutes();
+      // جلسة قديمة اتفتحت بعد فترة طويلة من آخر نشاط → لازم دخول من جديد
+      if(m && _lockLoadAct && Date.now() - _lockLoadAct >= m*60000){ lockNow(); }
+    }
+    if(!user){ const why = localStorage.getItem(LOCK_WHY_KEY); if(why){ localStorage.removeItem(LOCK_WHY_KEY); if(typeof _loginMsg === 'function') _loginMsg('🔒 السيستم اتقفل لعدم النشاط — ادخل اليوزر والباسورد تاني'); } }
+  });
+})();
+
+(function(){ const sel=document.getElementById('lockSel'); if(sel){ const v=String(lockMinutes()); if([...sel.options].some(o=>o.value===v)) sel.value=v; } })();
+
+</script>
+<script>
+/* ============================================================
+   الدخول بيوزر (اسم مستخدم) وباسورد + إضافة مستخدمين من جوه السيستم
+   ============================================================ */
+const USERS_COL = () => FIRESTORE_META.collection('users');
+const USER_DOMAIN = '@daftara.app';
+function toLoginEmail(v){ v = String(v||'').trim(); return v.includes('@') ? v : v.toLowerCase() + USER_DOMAIN; }
+const usernameOf = email => String(email||'').endsWith(USER_DOMAIN) ? email.slice(0, -USER_DOMAIN.length) : email;
+function usrMsg(t, cls){ const m = document.getElementById('usrMsg'); m.textContent = t || ''; m.style.color = cls==='ok' ? '#0E6B5F' : cls==='err' ? '#A34632' : 'var(--ink-faint)'; }
+function usrErr(e){
+  const c = (e && e.code) || '';
+  if(c.includes('email-already-in-use')) return 'اسم المستخدم ده موجود قبل كده';
+  if(c.includes('weak-password')) return 'كلمة المرور ضعيفة — لازم 6 حروف أو أرقام على الأقل';
+  if(c.includes('operation-not-allowed')) return 'لازم تفعّل Email/Password من Firebase Console ← Authentication ← Sign-in method';
+  if(c.includes('network')) return 'مفيش اتصال بالإنترنت';
+  if(c.includes('permission-denied')) return 'اتعمل الحساب لكن قواعد فايرستور منعت حفظ سجل المستخدم (permission-denied)';
+  return 'تعذر الإنشاء (' + (c || (e && e.message) || 'خطأ') + ')';
+}
+async function usrAdd(){
+  const name = document.getElementById('usrName').value.trim().toLowerCase(), pass = document.getElementById('usrPass').value, btn = document.getElementById('usrGo');
+  if(!/^[a-z0-9._-]{3,30}$/.test(name)){ usrMsg('اسم المستخدم: 3 إلى 30 حرف إنجليزي صغير أو أرقام أو . _ -', 'err'); return; }
+  if(pass.length < 6){ usrMsg('كلمة المرور لازم 6 حروف أو أرقام على الأقل', 'err'); return; }
+  btn.disabled = true; usrMsg('جاري إنشاء المستخدم…');
+  const email = name + USER_DOMAIN; let sec = null;
+  try{
+    // نسخة تانية من فايربيس عشان إنشاء المستخدم الجديد ما يطلّعش المستخدم الحالي
+    sec = firebase.initializeApp(firebaseConfig, 'sec' + Date.now());
+    const cred = await sec.auth().createUserWithEmailAndPassword(email, pass);
+    const by = (auth.currentUser && auth.currentUser.email) ? usernameOf(auth.currentUser.email) : '';
+    try{ await USERS_COL().doc(cred.user.uid).set({uid:cred.user.uid, username:name, email, createdAt:Date.now(), createdBy:by}); }
+    catch(e){ usrMsg(usrErr(e), 'err'); }
+    await sec.auth().signOut();
+    document.getElementById('usrName').value = ''; document.getElementById('usrPass').value = '';
+    usrMsg('✅ تم إنشاء المستخدم «' + name + '» — يقدر يدخل بيه دلوقتي', 'ok'); usrLoad();
+  }catch(e){ usrMsg(usrErr(e), 'err'); }
+  finally{ try{ if(sec) await sec.delete(); }catch(_){} btn.disabled = false; }
+}
+async function usrLoad(){
+  const box = document.getElementById('usrList'); if(!box) return;
+  try{
+    const snap = await USERS_COL().get(); const list = []; snap.forEach(d=> list.push(d.data()));
+    list.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    box.innerHTML = list.length ? list.map(u=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:10px;margin-top:6px;background:var(--surface);">
+        <span style="width:30px;height:30px;border-radius:50%;background:var(--primary-soft);color:var(--primary-dark);display:flex;align-items:center;justify-content:center;font-weight:700;">${escHtml((u.username||'?').charAt(0).toUpperCase())}</span>
+        <b style="font-family:'IBM Plex Mono';direction:ltr;">${escHtml(u.username||'')}</b>
+        <span class="muted" style="font-size:11.5px;margin-inline-start:auto;">${u.createdAt?new Date(u.createdAt).toLocaleDateString('ar-EG'):''}${u.createdBy?' · بواسطة '+escHtml(u.createdBy):''}</span></div>`).join('')
+      : '<div class="muted" style="font-size:12.5px;padding:8px 2px;">لسه ما اتضافش مستخدمين من هنا</div>';
+  }catch(e){ box.innerHTML = '<div class="muted" style="font-size:12.5px;padding:8px 2px;">تعذر تحميل قايمة المستخدمين (' + escHtml((e&&e.code)||'') + ')</div>'; }
+}
+usrLoad();
 
 </script>
 </body>
