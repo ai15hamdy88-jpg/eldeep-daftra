@@ -3301,6 +3301,7 @@ function startFirestoreSync(){
     showToast('تعذر الاتصال بقاعدة البيانات أونلاين — شغالة بالنسخة المحلية دلوقتي', true);
   });
   startEntriesIncrementalSync();
+  if(window._rcInitDone && typeof rcStartSync === 'function') rcStartSync();   // مزامنة صفحة الإيصالات
 }
 
 /* ============================================================
@@ -3664,7 +3665,7 @@ function rcDelRow(i){
 }
 
 /* ---------- الشعارات واسم الشركة ---------- */
-function rcBrandSet(k, v){ rcStore.brand[k] = v; rcPersist(); rcRenderPreview(); }
+function rcBrandSet(k, v){ rcStore.brand[k] = v; rcPersist(); rcPushMeta(); rcRenderPreview(); }
 function rcCompress(file, max, cb){
   const fr = new FileReader();
   fr.onload = ()=>{
@@ -3683,10 +3684,10 @@ function rcCompress(file, max, cb){
 }
 function rcLogoPick(key, inp){
   const f = inp.files && inp.files[0]; if(!f) return;
-  rcCompress(f, 360, d=>{ rcStore.brand[key] = d; rcPersist(); rcRenderBrandForm(); rcRenderPreview(); inp.value=''; });
+  rcCompress(f, 360, d=>{ rcStore.brand[key] = d; rcPersist(); rcPushMeta(); rcRenderBrandForm(); rcRenderPreview(); inp.value=''; });
 }
-function rcLogoClear(key){ rcStore.brand[key] = 'none'; rcPersist(); rcRenderBrandForm(); rcRenderPreview(); }
-function rcLogoReset(key){ rcStore.brand[key] = null; rcPersist(); rcRenderBrandForm(); rcRenderPreview(); }
+function rcLogoClear(key){ rcStore.brand[key] = 'none'; rcPersist(); rcPushMeta(); rcRenderBrandForm(); rcRenderPreview(); }
+function rcLogoReset(key){ rcStore.brand[key] = null; rcPersist(); rcPushMeta(); rcRenderBrandForm(); rcRenderPreview(); }
 function rcLogoSrc(b, key){
   const v = b[key];
   if(v === 'none') return '';
@@ -3820,10 +3821,19 @@ function rcSave(){
     if(i >= 0) rcStore.list[i] = snap; else rcStore.list.push(snap);
   } else {
     snap.id = 'rc' + Date.now() + Math.floor(Math.random()*1000);
+    snap.createdAt = Date.now();
+    // لو الرقم ده مستخدم قبل كده (مثلًا من جهاز تاني) نقترح أول رقم متاح
+    if(rcStore.list.some(x=>String(x.no)===String(snap.no))){
+      const mx = rcStore.list.reduce((m,x)=>{ const v = parseInt(x.no,10); return isFinite(v) && v>m ? v : m; }, 0);
+      const free = rcPad(Math.max(rcStore.seq, mx + 1));
+      if(confirm('رقم الإيصال ' + snap.no + ' مستخدم قبل كده (ممكن من جهاز تاني).\n\nأغيّره لـ ' + free + ' ؟')) snap.no = free;
+    }
     rcStore.list.push(snap);
-    const n = parseInt(c.no, 10);
+    const n = parseInt(snap.no, 10);
     rcStore.seq = Math.max(rcStore.seq, isFinite(n) ? n + 1 : rcStore.seq + 1);
+    rcPushMeta();
   }
+  rcPushReceipt(snap);
   rcPersist(); rcRenderList(); showToast('تمت إضافة الإيصال للقائمة');
   rcCur = rcBlank(); rcFillForm(); rcRenderRows(); rcRenderPreview();
 }
@@ -3837,6 +3847,7 @@ function rcEdit(id){
 function rcDelete(id){
   if(!confirm('حذف الإيصال ده؟')) return;
   rcStore.list = rcStore.list.filter(x=>x.id!==id); rcSelected.delete(id); rcPersist(); rcRenderList();
+  RC_COL.doc(String(id)).delete().catch(e=>{ console.warn('تعذر حذف الإيصال أونلاين', e); showToast('تعذر حذف الإيصال أونلاين — هيتحذف لما النت يرجع', true); });
 }
 function rcToggleSel(id, on){ on ? rcSelected.add(id) : rcSelected.delete(id); }
 function rcSelectAll(on){ rcSelected = on ? new Set(rcStore.list.map(r=>r.id)) : new Set(); rcRenderList(); }
@@ -3896,11 +3907,111 @@ function rcPrintSelected(){
   rcPrintItems(items);
 }
 
+/* ---------- المزامنة مع Firestore (نفس نظام باقي السيستم) ---------- */
+const RC_COL  = FIRESTORE_META.collection('receipts');                 // كل إيصال مستند لوحده
+const RC_META = FIRESTORE_META.collection('receipts_meta').doc('brand'); // الشعارات + اسم الشركة + عداد الأرقام
+const RC_MIG_KEY = 'dafatra_receipts_migrated_v1';
+const RC_MIG_META_KEY = 'dafatra_receipts_meta_migrated_v1';
+let _rcSyncStarted = false, _rcMetaTimer = null, _rcMetaPending = false;
+
+function rcKey(r){ return r.createdAt || Math.floor((Number(String(r.id).slice(2)) || 0) / 1000); }
+function rcSortList(){ rcStore.list.sort((a,b)=> rcKey(a) - rcKey(b)); }
+function rcRemoteCopy(r){
+  const o = JSON.parse(JSON.stringify(r));
+  // حد Firestore للمستند 1MB: لو الشعارات كبيرة بنشيلها من نسخة الإيصال (الشعارات الأساسية متزامنة لوحدها)
+  if(JSON.stringify(o).length > 800000 && o.brand){
+    ['logo1','logo2','stamp'].forEach(k=>{ if(typeof o.brand[k]==='string' && o.brand[k].indexOf('data:')===0) o.brand[k] = null; });
+  }
+  o.updatedAt = Date.now();
+  return o;
+}
+function rcPushReceipt(r){
+  RC_COL.doc(String(r.id)).set(rcRemoteCopy(r)).catch(e=>{
+    console.warn('تعذر مزامنة الإيصال', e);
+    showToast('تعذر مزامنة الإيصال أونلاين — اتحفظ على الجهاز ومش هيظهر على الأجهزة التانية', true);
+  });
+}
+function rcPushMeta(){
+  if(!_rcSyncStarted) return;
+  clearTimeout(_rcMetaTimer); _rcMetaPending = true;
+  _rcMetaTimer = setTimeout(()=>{
+    const data = {brand: JSON.parse(JSON.stringify(rcStore.brand)), seq: rcStore.seq, updatedAt: Date.now()};
+    if(JSON.stringify(data).length > 950000) showToast('الشعارات كبيرة قوي على المزامنة — صغّر حجم الصور', true);
+    RC_META.set(data).then(()=>{ _rcMetaPending = false; }).catch(e=>{
+      _rcMetaPending = false; console.warn('تعذر مزامنة إعدادات الإيصال', e);
+      showToast('تعذر مزامنة الشعارات أونلاين', true);
+    });
+  }, 600);
+}
+function rcStartSync(){
+  if(_rcSyncStarted) return; _rcSyncStarted = true;
+
+  // الشعارات واسم الشركة وعداد رقم الإيصال
+  RC_META.onSnapshot(snap=>{
+    if(!snap.exists){
+      // أول مرة: نرفع إعدادات الجهاز ده (لو متعدلة) من غير ما نكتب فوق حاجة موجودة
+      if(!snap.metadata.fromCache && !localStorage.getItem(RC_MIG_META_KEY)){
+        const b = rcStore.brand, custom = b.logo1 || b.logo2 || b.stamp || b.name || rcStore.seq > 1;
+        try{ localStorage.setItem(RC_MIG_META_KEY, '1'); }catch(e){}
+        if(custom) rcPushMeta();
+      }
+      return;
+    }
+    try{ localStorage.setItem(RC_MIG_META_KEY, '1'); }catch(e){}
+    if(_rcMetaPending || snap.metadata.hasPendingWrites) return;   // فيه تعديل محلي لسه ماتبعتش
+    const d = snap.data(), oldSeq = rcStore.seq;
+    if(d.brand && typeof d.brand === 'object') rcStore.brand = Object.assign({}, RC_BRAND_DEFAULT, d.brand);
+    if(!rcStore.brand.name && typeof companyInfo !== 'undefined' && companyInfo.name) rcStore.brand.name = companyInfo.name;
+    if(Number.isFinite(d.seq) && d.seq > rcStore.seq) rcStore.seq = d.seq;
+    rcPersist(); rcRenderBrandForm();
+    if(rcCur && !rcCur.id && rcCur.no === rcPad(oldSeq) && rcStore.seq !== oldSeq){
+      rcCur.no = rcPad(rcStore.seq); const el = document.getElementById('rcNo'); if(el) el.value = rcCur.no;
+    }
+    rcRenderPreview();
+  }, err=>{ console.warn('تعذر مزامنة إعدادات الإيصالات', err); setSync('err', err && err.code); });
+
+  // قائمة الإيصالات
+  let first = true;
+  RC_COL.onSnapshot(snap=>{
+    let changed = false;
+    snap.docChanges().forEach(ch=>{
+      const id = ch.doc.id, i = rcStore.list.findIndex(x=>x.id===id);
+      if(ch.type === 'removed'){ if(i > -1){ rcStore.list.splice(i,1); rcSelected.delete(id); changed = true; } return; }
+      const d = ch.doc.data(); d.id = d.id || id;
+      if(i > -1) rcStore.list[i] = d; else rcStore.list.push(d);
+      changed = true;
+    });
+    if(first && !snap.metadata.fromCache){
+      first = false;
+      const ids = new Set(snap.docs.map(d=>d.id));
+      if(!localStorage.getItem(RC_MIG_KEY)){
+        // ترحيل لمرة واحدة: إيصالات الجهاز ده اللي مش على السيرفر تترفع
+        rcStore.list.forEach(r=>{ if(!ids.has(String(r.id))) rcPushReceipt(r); });
+        try{ localStorage.setItem(RC_MIG_KEY, '1'); }catch(e){}
+      } else {
+        // إيصال اتحذف من جهاز تاني وإحنا أوفلاين: نشيله من هنا كمان
+        const before = rcStore.list.length;
+        rcStore.list = rcStore.list.filter(r=> ids.has(String(r.id)));
+        if(rcStore.list.length !== before){ changed = true; rcSelected = new Set([...rcSelected].filter(x=>ids.has(x))); }
+      }
+    }
+    if(changed){
+      rcSortList();
+      const mx = rcStore.list.reduce((m,x)=>{ const v = parseInt(x.no,10); return isFinite(v) && v>m ? v : m; }, 0);
+      if(mx + 1 > rcStore.seq) rcStore.seq = mx + 1;
+      rcPersist(); rcRenderList();
+    }
+  }, err=>{ console.warn('تعذر مزامنة الإيصالات', err); setSync('err', err && err.code); });
+}
+
 /* ---------- تشغيل ---------- */
 function rcInit(){
   rcLoad(); rcInjectCss();
   if(!rcStore.brand.name && typeof companyInfo !== 'undefined' && companyInfo.name) rcStore.brand.name = companyInfo.name;
+  rcSortList();
   rcRenderBrandForm(); rcNew(); rcRenderList();
+  window._rcInitDone = true;
+  if(_syncStarted) rcStartSync();   // لو الدخول/المزامنة بدأت قبل ما الصفحة تجهز
 }
 rcInit();
 
