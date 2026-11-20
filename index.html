@@ -2316,8 +2316,9 @@ function updateEntryStatus(){
   const to = document.getElementById('entTo').value;
   const sub = document.getElementById('entSubAccount').value;
   const cc = document.getElementById('entCostCenter').value;
-  const debit = parseFloat(document.getElementById('entDebit').value)||0;
-  const credit = parseFloat(document.getElementById('entCredit').value)||0;
+  const debitRaw = document.getElementById('entDebit').value.trim(), creditRaw = document.getElementById('entCredit').value.trim();
+  const debit = parseFloat(debitRaw)||0;
+  const credit = parseFloat(creditRaw)||0;
   const diffEl = document.getElementById('entDiff');
 
   let msg = null;
@@ -2327,12 +2328,14 @@ function updateEntryStatus(){
   else if(!to) msg = 'من فضلك اختر "الى حساب"';
   else if(from===to) msg = 'من حساب والى حساب لا يمكن أن يكونا نفس الحساب';
   else if(!cc) msg = 'من فضلك اختر مركز التكلفة';
-  else if(debit<=0) msg = 'من فضلك أدخل مبلغ المدين';
-  else if(credit<=0) msg = 'من فضلك أدخل مبلغ الدائن';
+  // المبلغ لازم يتكتب — ولو اتكتب 0 يتقبل (معناه إن الحساب ده معملش حركة/إيراد في اليوم ده)
+  else if(debitRaw==='' || isNaN(parseFloat(debitRaw))) msg = 'من فضلك أدخل مبلغ المدين (اكتب 0 لو مفيش حركة في اليوم ده)';
+  else if(creditRaw==='' || isNaN(parseFloat(creditRaw))) msg = 'من فضلك أدخل مبلغ الدائن (اكتب 0 لو مفيش حركة في اليوم ده)';
+  else if(debit<0 || credit<0) msg = 'المبلغ لا يمكن أن يكون سالب';
   else if(Math.abs(debit-credit)>=0.005) msg = 'القيد غير متزن — المدين (' + fmt(debit) + ') لا يساوي الدائن (' + fmt(credit) + ')';
 
   const ok = !msg;
-  diffEl.textContent = ok ? 'القيد متزن ✓ جاهز للترحيل' : msg;
+  diffEl.textContent = ok ? (debit===0 && credit===0 ? 'القيد بمبلغ صفر ✓ جاهز للترحيل (يوم من غير حركة)' : 'القيد متزن ✓ جاهز للترحيل') : msg;
   diffEl.className = 'num ' + (ok ? 'diff-ok':'diff-bad');
   document.getElementById('saveEntryBtn').disabled = !ok;
   return ok;
@@ -4850,7 +4853,7 @@ const entLineCC  = (e,l)=> e.compound ? (l.costCenterCode||'') : (e.costCenterCo
 const entLineSub = (e,l)=> e.compound ? (l.subAccountCode||'') : (e.subAccountCode||'');
 function cmpItems(){ return postableAccounts().map(a=>({code:a.code, name:a.name})); }
 const cmpLabel = it => it.code + ' — ' + it.name;
-const cmpNewLine = l => ({code:(l&&l.code)||'', desc:(l&&l.desc)||'', amount:(l&&l.amount)||'', cc:(l&&l.cc)||'', sub:(l&&l.sub)||''});
+const cmpNewLine = l => ({code:(l&&l.code)||'', desc:(l&&l.desc)||'', amount:(l&&l.amount!=null)?l.amount:'', cc:(l&&l.cc)||'', sub:(l&&l.sub)||''});
 
 /* كومبو بحث عن حساب (عام) */
 function cmpInitCombo(box, getCode, setCode){
@@ -4916,8 +4919,8 @@ function cmpStatus(){
   let msg = null;
   if(!date) msg = 'من فضلك أدخل التاريخ'; else if(!desc) msg = 'من فضلك أدخل البيان العام'; else if(!cmpSingle) msg = 'اختر حساب الطرف الواحد (مثلاً الخزنة)';
   else if(cmpLines.length < 2) msg = 'ضيف سطرين على الأقل (لو سطر واحد استخدم "إضافة قيد" العادي)';
-  else { const bad = cmpLines.findIndex(l=>!l.code); const noAmt = cmpLines.findIndex(l=>!(parseFloat(l.amount)>0)); const noCC = cmpLines.findIndex(l=>!l.cc); const same = cmpLines.findIndex(l=>l.code && l.code===cmpSingle);
-    if(bad>=0) msg = 'السطر ' + (bad+1) + ': اختر الحساب'; else if(noAmt>=0) msg = 'السطر ' + (noAmt+1) + ': اكتب المبلغ'; else if(noCC>=0) msg = 'السطر ' + (noCC+1) + ': اختر مركز التكلفة';
+  else { const bad = cmpLines.findIndex(l=>!l.code); const noAmt = cmpLines.findIndex(l=>!(String(l.amount==null?'':l.amount).trim()!=='' && parseFloat(l.amount)>=0)); const noCC = cmpLines.findIndex(l=>!l.cc); const same = cmpLines.findIndex(l=>l.code && l.code===cmpSingle);
+    if(bad>=0) msg = 'السطر ' + (bad+1) + ': اختر الحساب'; else if(noAmt>=0) msg = 'السطر ' + (noAmt+1) + ': اكتب المبلغ (اكتب 0 لو مفيش حركة)'; else if(noCC>=0) msg = 'السطر ' + (noCC+1) + ': اختر مركز التكلفة';
     else if(same>=0) msg = 'السطر ' + (same+1) + ': نفس حساب الطرف الواحد'; }
   const el = document.getElementById('cmpMsg'), ok = !msg;
   el.textContent = ok ? 'القيد متزن ✓ (' + fmt(tot) + ') جاهز للترحيل' : msg; el.className = 'num ' + (ok?'diff-ok':'diff-bad'); document.getElementById('cmpSave').disabled = !ok;
@@ -4932,6 +4935,10 @@ function openCompoundModal(editId){
     const L = e.lines||[], dl = L.filter(l=>l.debit>0), cl = L.filter(l=>l.credit>0);
     let single, rest, side;
     if(cl.length===1){ single = cl[0]; rest = dl; side = 'credit'; } else if(dl.length===1){ single = dl[0]; rest = cl; side = 'debit'; }
+    else if(!dl.length && !cl.length && L.length >= 3){   // قيد بمبلغ صفر: الطرف الواحد هو آخر سطر لو دائن، وأول سطر لو مدين
+      if(L[L.length-1].code === e.toCode){ side = 'credit'; single = L[L.length-1]; rest = L.slice(0,-1); }
+      else { side = 'debit'; single = L[0]; rest = L.slice(1); }
+    }
     else { showToast('القيد ده بصيغة قديمة (أكتر من طرف على الجهتين) — احذفه واعمله من جديد', true); return; }
     cmpSide = side; cmpSingle = single.code;
     cmpLines = rest.map(l=>cmpNewLine({code:l.code, desc:l.desc, amount:(side==='credit'?l.debit:l.credit), cc:l.costCenterCode||e.costCenterCode||'', sub:l.subAccountCode||e.subAccountCode||''}));
