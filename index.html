@@ -505,6 +505,46 @@
   .db-chip.print{ background:#AD7F35; border-color:#AD7F35; margin-inline-start:auto; }
   .db-chip.print:hover{ background:#c3923f; }
   .je-grp td{ border-top:2px solid var(--border); }
+
+  /* ===== Scan reports page ===== */
+  .sc-types{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  .sc-type{ border:2px solid var(--border); border-radius:var(--radius-m); padding:14px 16px; cursor:pointer; background:var(--surface); transition:.15s; }
+  .sc-type b{ display:block; font-size:14.5px; margin-bottom:3px; }
+  .sc-type span{ font-size:12px; color:var(--ink-faint); }
+  .sc-type.on{ border-color:var(--primary); background:var(--primary-softer); box-shadow:0 0 0 3px var(--primary-soft); }
+  .sc-drop{ border:2px dashed var(--border); border-radius:var(--radius-m); padding:18px; text-align:center; color:var(--ink-soft); background:var(--surface-alt); font-size:13px; }
+  .sc-pend{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  .sc-pend div{ position:relative; width:84px; height:84px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
+  .sc-pend img{ width:100%; height:100%; object-fit:cover; }
+  .sc-pend button{ position:absolute; top:3px; left:3px; border:none; background:rgba(0,0,0,.6); color:#fff; border-radius:50%; width:20px; height:20px; cursor:pointer; line-height:20px; padding:0; }
+  .sc-cfg summary{ cursor:pointer; font-size:12.5px; font-weight:600; color:var(--ink-soft); }
+  .sc-cfg .field-row{ margin-top:10px; grid-template-columns:1fr 1fr 1fr; }
+  .sc-card{ margin-top:18px; }
+  .sc-card-head{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .sc-card-head img{ width:46px; height:46px; object-fit:cover; border-radius:8px; border:1px solid var(--border); }
+  .sc-card-head .t{ font-weight:700; font-size:15px; }
+  .sc-card-head .s{ font-size:11.5px; color:var(--ink-faint); }
+  .sc-card-head .acts{ margin-inline-start:auto; display:flex; gap:6px; flex-wrap:wrap; }
+  .sc-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-bottom:14px; }
+  .sc-kv{ background:var(--surface-alt); border-radius:8px; padding:9px 12px; }
+  .sc-kv label{ display:block; font-size:11px; color:var(--ink-faint); margin-bottom:3px; }
+  .sc-kv .v{ font-weight:700; font-size:13.5px; }
+  .sc-kv.big{ background:var(--primary-soft); } .sc-kv.big .v{ font-size:19px; color:var(--primary-dark); }
+  .sc-in{ width:100%; border:1px solid transparent; background:transparent; font:inherit; font-size:inherit; padding:3px 4px; border-radius:4px; color:inherit; min-width:60px; }
+  .sc-in:hover,.sc-in:focus{ border-color:var(--border); background:#fff; outline:none; }
+  .sc-in.n{ direction:ltr; text-align:left; font-family:'IBM Plex Mono',monospace; }
+  .sc-chk{ border:1px solid var(--border); border-radius:var(--radius-m); margin-bottom:12px; overflow:hidden; }
+  .sc-chk h4{ margin:0; padding:9px 14px; font-size:13px; display:flex; gap:8px; align-items:center; }
+  .sc-chk.ok h4{ background:#E6F3EC; color:#1E6B45; } .sc-chk.bad h4{ background:var(--danger-soft); color:var(--danger); } .sc-chk.warn h4{ background:var(--gold-soft); color:#7A5518; }
+  .sc-chk .bd{ padding:10px 14px; font-size:13px; line-height:1.9; }
+  .sc-chk table{ font-size:12.5px; }
+  .sc-tw{ overflow:auto; border:1px solid var(--border); border-radius:var(--radius-m); }
+  .sc-tw tr.z td{ background:#FFF6DD; } .sc-tw tr.d td{ background:#FBE4DE; } .sc-tw tr.u td{ background:#FBE4DE; }
+  .sc-tw td{ padding:4px 8px; border-bottom:1px solid var(--border-soft); white-space:nowrap; }
+  .sc-bad{ color:var(--danger); font-weight:700; } .sc-good{ color:#1E6B45; font-weight:700; }
+  .sc-spin{ display:inline-block; width:15px; height:15px; border:2px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:scspin .8s linear infinite; vertical-align:middle; }
+  @keyframes scspin{ to{ transform:rotate(360deg);} }
+  @media (max-width:640px){ .sc-types{ grid-template-columns:1fr; } .sc-cfg .field-row{ grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -582,6 +622,11 @@
     <div class="nav-item" data-page="receipt">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
       <span class="side-label">إيصال استلام</span>
+    </div>
+
+    <div class="nav-item" data-page="scan">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><path d="M8 9h8M8 12h8M8 15h5"/></svg>
+      <span class="side-label">قراءة الصور</span>
     </div>
 
     <div class="nav-item nav-settings" data-page="settings">
@@ -1128,6 +1173,49 @@
           </table>
         </div>
       </div>
+    </section>
+
+    <!-- ===================== PAGE: SCAN REPORTS ===================== -->
+    <section class="page" id="page-scan">
+      <div class="page-head">
+        <div>
+          <h1>قراءة الصور وتقاريرها</h1>
+          <p>ارفع صور يومية الخزنة أو تحليلي المصروفات — وكل صورة بيطلع لها تقرير تدقيق مفصّل تقدر تطبعه PDF أو Excel</p>
+        </div>
+      </div>
+
+      <div class="card card-pad">
+        <div class="section-title" style="margin-top:0;"><span class="dot" style="background:var(--gold)"></span>١) اختار نوع الصورة</div>
+        <div class="sc-types">
+          <div class="sc-type on" id="scT-khazna" onclick="scSetType('khazna')"><b>🧾 يومية خزنة</b><span>تقرير: اسم المستخدم والشيفت، التاريخ، الرصيد الفعلي، العملاء ذوو الدفعة صفر، وتسلسل الإيصالات</span></div>
+          <div class="sc-type" id="scT-expense" onclick="scSetType('expense')"><b>📝 تحليلي مصروفات</b><span>تقرير: كل البيانات والمبالغ المسجلة + إجمالي المصاريف مع تدقيق الأرقام</span></div>
+        </div>
+
+        <div class="section-title"><span class="dot" style="background:var(--primary)"></span>٢) ارفع الصور (تقدر ترفع أكتر من صورة مرة واحدة)</div>
+        <label class="sc-drop" style="display:block; cursor:pointer;">
+          📷 اضغط لاختيار الصور
+          <input type="file" id="scFile" accept="image/*" multiple style="display:none;" onchange="scPick(this)">
+        </label>
+        <div class="sc-pend" id="scPend"></div>
+
+        <div style="display:flex; gap:10px; align-items:center; margin-top:14px; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="scRunBtn" onclick="scRun()">تحليل الصور وعمل التقارير</button>
+          <span class="field-hint" style="margin:0;" id="scRunHint"></span>
+        </div>
+
+        <details class="sc-cfg" id="scCfgBox" style="margin-top:16px;">
+          <summary>⚙️ إعدادات القراءة الذكية (مفتاح API) — مطلوبة مرة واحدة</summary>
+          <div class="field-row">
+            <div class="field"><label>المزوّد</label>
+              <select id="scProv" onchange="scProvChange()"><option value="gemini">Google Gemini</option><option value="claude">Anthropic Claude</option></select></div>
+            <div class="field"><label>مفتاح API</label><input type="password" id="scKey" placeholder="الصق المفتاح هنا" dir="ltr" onchange="scSaveCfg()"></div>
+            <div class="field"><label>اسم الموديل</label><input type="text" id="scModel" dir="ltr" onchange="scSaveCfg()"></div>
+          </div>
+          <div class="field-hint">المفتاح بيتحفظ في متصفحك بس (localStorage) ومبيتبعتش غير لمزوّد الذكاء الاصطناعي. الصور بتتبعت للمزوّد المختار عشان تتقرأ.</div>
+        </details>
+      </div>
+
+      <div id="scResults"></div>
     </section>
 
     <section class="page" id="page-settings">
@@ -5186,6 +5274,362 @@ async function usrLoad(){
 }
 usrLoad();
 
+</script>
+<script>
+/* ============================================================
+   SCAN REPORTS — قراءة صور يومية الخزنة وتحليلي المصروفات
+   ============================================================ */
+(function(){
+const CFG_KEY = 'daftara_scan_cfg_v1';
+const DEF_MODEL = {gemini:'gemini-2.5-flash', claude:'claude-sonnet-5-5'};
+let cfg = {provider:'gemini', key:'', models:{}};
+try{ const s = JSON.parse(localStorage.getItem(CFG_KEY)||'null'); if(s) cfg = Object.assign(cfg, s); }catch(e){}
+let scType = 'khazna', pending = [], items = [], seq = 0;
+
+const $ = id => document.getElementById(id);
+const esc = t => String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const AR = '٠١٢٣٤٥٦٧٨٩';
+function num(v){
+  if(v==null || v==='') return null;
+  let s = String(v).replace(/[٠-٩]/g, d=>AR.indexOf(d)).replace(/[,٬\s]/g,'').replace(/٫/g,'.');
+  if(s==='' || !isFinite(+s)) return null;
+  return +s;
+}
+const fmt = x => x==null ? '—' : x.toLocaleString('en-US',{maximumFractionDigits:2});
+const near = (a,b) => Math.abs(a-b) < 0.005;
+const TYPE_LABEL = {khazna:'يومية خزنة', expense:'تحليلي مصروفات'};
+
+/* ---------- settings ---------- */
+function cfgToUi(){
+  $('scProv').value = cfg.provider; $('scKey').value = cfg.key||'';
+  $('scModel').value = (cfg.models&&cfg.models[cfg.provider]) || DEF_MODEL[cfg.provider];
+}
+window.scSaveCfg = function(){
+  cfg.provider = $('scProv').value; cfg.key = $('scKey').value.trim();
+  cfg.models = cfg.models||{}; cfg.models[cfg.provider] = $('scModel').value.trim() || DEF_MODEL[cfg.provider];
+  try{ localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); }catch(e){}
+};
+window.scProvChange = function(){ cfg.provider = $('scProv').value; cfgToUi(); scSaveCfg(); };
+window.scSetType = function(t){
+  scType = t; ['khazna','expense'].forEach(k=> $('scT-'+k).classList.toggle('on', k===t));
+};
+
+/* ---------- pending files ---------- */
+window.scPick = function(inp){
+  for(const f of inp.files){ if(f.type.startsWith('image/')) pending.push({id:'p'+(++seq), file:f, url:URL.createObjectURL(f)}); }
+  inp.value = ''; renderPending();
+};
+window.scRemovePending = function(id){ pending = pending.filter(p=>p.id!==id); renderPending(); };
+function renderPending(){
+  $('scPend').innerHTML = pending.map(p=>`<div><img src="${p.url}"><button onclick="scRemovePending('${p.id}')">×</button></div>`).join('');
+  $('scRunHint').textContent = pending.length ? `${pending.length} صورة جاهزة — النوع: ${TYPE_LABEL[scType]}` : '';
+}
+
+/* ---------- image prep ---------- */
+function prepImage(file){
+  return new Promise((res, rej)=>{
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = ()=>{
+      const M = 2000, k = Math.min(1, M/Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth*k); c.height = Math.round(img.naturalHeight*k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(u); res(c.toDataURL('image/jpeg', .9).split(',')[1]);
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(u); rej(new Error('تعذر فتح الصورة')); };
+    img.src = u;
+  });
+}
+
+/* ---------- prompts ---------- */
+const COMMON = 'You are a meticulous data-entry auditor reading a photo of an Arabic business document (it may be rotated, skewed, or handwritten). Copy every value EXACTLY as written; never guess, never fix, never calculate. If a value is missing or unreadable use null. Numbers must be plain JSON numbers (no commas). Reply with ONE JSON object only, no markdown.';
+const PROMPT = {
+khazna: COMMON + `
+The photo is a printed cashier daily report ("يومية خزينة استقبال مجمعة") with handwritten marks on it. Return:
+{
+ "userName": value after the label "اسم المستخدم",
+ "shiftPerson": the person name written next to the user name (the person who was on the shift; also appears after "Printed By"),
+ "branch": value after "الفرع" (null if empty),
+ "fromDate": the "من" date-time, "toDate": the "الى" date-time, "printedDate": the "Printed Date" value,
+ "actualBalance": number next to "الرصيد الفعلى" in the footer box,
+ "footer": {"totalPayments": "اجمالي الدفعات", "totalRefunds": "اجمالي الاستردادات", "totalPaid": "اجمالي المدفوع", "totalRemaining": "اجمالي البواقي", "totalDiscount": "اجمالي الخصم", "grandTotal": "الاجمالي"},
+ "rows": [ one object per table row, top to bottom, INCLUDING repeated receipt numbers: {"no": "الرقم" as string, "name": "الاسم", "doctor": "الطبيب", "datetime": "تاريخ الدفعة", "payment": "الدفعة" number, "refunds": "استردادات" number, "discount": "الخصم" number, "remaining": "الباقي" number, "cash": "المدفوع نقدا" number, "visa": "المدفوع فيزا" number, "total": "الاجمالي" number, "party": "الجهة" (e.g. "Normal Patient / Cash" or "التأمين الصحي ... " including the second line)} ],
+ "handwrittenNotes": any handwritten text at the bottom of the page, transcribed as-is (null if none)
+}
+Be careful to read each column by its header; a row with 0 in the "الدفعة" column must have payment = 0.`,
+expense: COMMON + `
+The photo is a handwritten expense analysis sheet ("تحليلي المصروفات عن يوم ..."), a table with columns: البيان, المبلغ, مركز التكلفة, ملاحظات. Return:
+{
+ "company": header company/department text (null if none), "title": sheet title, "date": the date written on the sheet,
+ "rows": [ one object per NON-EMPTY table row, top to bottom: {"desc": "البيان" text, "amount": "المبلغ" number, "costCenter": "مركز التكلفة" text or null, "notes": "ملاحظات" text or null} ],
+ "writtenTotal": the number written next to "الإجمالي" at the bottom (null if none),
+ "handwrittenNotes": any other writing/signature labels such as "المدير الإداري" with names, or other totals, transcribed as-is (null if none)
+}
+Skip crossed-out or blank lines. Do not add rows that are not clearly written.`
+};
+
+/* ---------- AI call ---------- */
+function parseJson(txt){
+  txt = String(txt||'').replace(/```json|```/g,'').trim();
+  const a = txt.indexOf('{'), b = txt.lastIndexOf('}');
+  if(a<0 || b<=a) throw new Error('رد غير مفهوم من الموديل');
+  return JSON.parse(txt.slice(a, b+1));
+}
+async function callAI(b64, type){
+  const model = (cfg.models&&cfg.models[cfg.provider]) || DEF_MODEL[cfg.provider];
+  if(cfg.provider === 'gemini'){
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(cfg.key)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({contents:[{parts:[{text:PROMPT[type]},{inline_data:{mime_type:'image/jpeg', data:b64}}]}], generationConfig:{responseMimeType:'application/json', temperature:0}})
+    });
+    const j = await r.json();
+    if(!r.ok) throw new Error((j.error&&j.error.message) || ('HTTP '+r.status));
+    const parts = (j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts)||[];
+    return parseJson(parts.map(p=>p.text||'').join(''));
+  }
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':cfg.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body: JSON.stringify({model, max_tokens:8000, temperature:0, messages:[{role:'user', content:[{type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}},{type:'text', text:PROMPT[type]}]}]})
+  });
+  const j = await r.json();
+  if(!r.ok) throw new Error((j.error&&j.error.message) || ('HTTP '+r.status));
+  return parseJson((j.content||[]).map(c=>c.text||'').join(''));
+}
+function normalize(type, d){
+  d = d||{}; d.rows = Array.isArray(d.rows) ? d.rows : [];
+  if(type==='khazna') d.footer = d.footer||{};
+  return d;
+}
+
+/* ---------- run ---------- */
+window.scRun = async function(){
+  if(!pending.length){ showToast('اختار صورة واحدة على الأقل', true); return; }
+  if(!cfg.key){ $('scCfgBox').open = true; showToast('أدخل مفتاح API الأول من الإعدادات', true); return; }
+  const batch = pending; pending = []; renderPending();
+  const mine = batch.map(p=>{ const it = {id:'r'+(++seq), type:scType, name:p.file.name, url:p.url, status:'loading', data:null, err:'', b64:null, file:p.file}; items.push(it); return it; });
+  render();
+  $('scRunBtn').disabled = true;
+  for(const it of mine){ await process(it); }
+  $('scRunBtn').disabled = false;
+};
+async function process(it){
+  it.status = 'loading'; it.err = ''; render();
+  try{
+    if(!it.b64) it.b64 = await prepImage(it.file);
+    it.data = normalize(it.type, await callAI(it.b64, it.type)); it.status = 'done';
+  }catch(e){ it.status = 'error'; it.err = (e&&e.message) || String(e); }
+  render();
+}
+window.scRetry = id => { const it = items.find(x=>x.id===id); if(it) process(it); };
+window.scDel = id => { items = items.filter(x=>x.id!==id); render(); };
+
+/* ---------- editing ---------- */
+const find = id => items.find(x=>x.id===id);
+window.scEditH = (id,k,v)=>{ const it=find(id); if(!it) return; if(k.startsWith('f.')) it.data.footer[k.slice(2)] = (v===''?null:num(v)); else if(k==='actualBalance'||k==='writtenTotal') it.data[k] = (v===''?null:num(v)); else it.data[k] = v; render(); };
+const NUMK = {payment:1,refunds:1,discount:1,remaining:1,cash:1,visa:1,total:1,amount:1};
+window.scEditR = (id,i,k,v)=>{ const it=find(id); if(!it) return; it.data.rows[i][k] = NUMK[k] ? (v===''?null:num(v)) : v; render(); };
+window.scAddRow = id=>{ const it=find(id); if(!it) return; it.data.rows.push({}); render(); };
+window.scDelRow = (id,i)=>{ const it=find(id); if(!it) return; it.data.rows.splice(i,1); render(); };
+
+/* ---------- analysis ---------- */
+function anaKhazna(d){
+  const rows = d.rows, sum = k => rows.reduce((a,r)=>a+(num(r[k])||0),0);
+  const nos = rows.map(r=>String(r.no==null?'':r.no).replace(/\D/g,'')).map(s=>s?parseInt(s,10):NaN);
+  const cnt = {}; nos.forEach(n=>{ if(isFinite(n)) cnt[n] = (cnt[n]||0)+1; });
+  const dups = Object.keys(cnt).filter(k=>cnt[k]>1).map(k=>({no:+k, times:cnt[k]}));
+  const uniq = Object.keys(cnt).map(Number).sort((a,b)=>a-b), gaps = [];
+  for(let i=1;i<uniq.length;i++) if(uniq[i]-uniq[i-1]>1) gaps.push({from:uniq[i-1]+1, to:uniq[i]-1});
+  const unread = nos.filter(n=>!isFinite(n)).length;
+  const zeroRows = rows.map((r,i)=>({r,i})).filter(x=>num(x.r.payment)===0);
+  const sPay = sum('payment'), sRef = sum('refunds');
+  const f = d.footer||{};
+  const audit = [
+    ['إجمالي الدفعات', num(f.totalPayments), sPay, 'مجموع عمود الدفعة'],
+    ['إجمالي الاستردادات', num(f.totalRefunds), sRef, 'مجموع عمود الاستردادات'],
+    ['إجمالي المدفوع', num(f.totalPaid), sum('cash')+sum('visa'), 'نقدًا + فيزا'],
+    ['إجمالي البواقي', num(f.totalRemaining), sum('remaining'), 'مجموع عمود الباقي'],
+    ['إجمالي الخصم', num(f.totalDiscount), sum('discount'), 'مجموع عمود الخصم'],
+    ['الإجمالي', num(f.grandTotal), sum('total'), 'مجموع عمود الإجمالي'],
+    ['الرصيد الفعلي', num(d.actualBalance), sPay-sRef, 'الدفعات − الاستردادات']
+  ].map(a=>({label:a[0], printed:a[1], computed:a[2], how:a[3], ok: a[1]!=null && near(a[1],a[2])}));
+  const dupSet = new Set(dups.map(x=>x.no));
+  return {nos, dups, dupSet, gaps, unread, zeroRows, audit, count:rows.length, uniqCount:uniq.length,
+          min:uniq[0], max:uniq[uniq.length-1], sequenceOk: !dups.length && !gaps.length && !unread};
+}
+function anaExpense(d){
+  const rows = d.rows, amts = rows.map(r=>num(r.amount));
+  const total = amts.reduce((a,b)=>a+(b||0),0), written = num(d.writtenTotal);
+  const noAmt = rows.map((r,i)=>({r,i})).filter((x,j)=>amts[j]==null);
+  const noDesc = rows.map((r,i)=>({r,i})).filter(x=>!String(x.r.desc||'').trim());
+  return {total, written, noAmt, noDesc, count:rows.length, match: written!=null && near(written,total)};
+}
+
+/* ---------- html builders (edit=true: shown on screen, false: print) ---------- */
+function inp(id,i,k,v,edit,isNum){
+  if(!edit) return esc(isNum ? (v==null?'—':fmt(num(v))) : (v==null||v===''?'—':v));
+  return `<input class="sc-in${isNum?' n':''}" value="${esc(v==null?'':v)}" onchange="scEditR('${id}',${i},'${k}',this.value)">`;
+}
+function hdr(id,k,v,edit,isNum){
+  const shown = v==null||v==='' ? '—' : (isNum ? fmt(num(v)) : esc(v));
+  if(!edit) return shown;
+  return `<input class="sc-in${isNum?' n':''}" style="font-weight:700;" value="${esc(v==null?'':v)}" onchange="scEditH('${id}','${k}',this.value)">`;
+}
+function chk(cls, title, body){ return `<div class="sc-chk ${cls}"><h4>${title}</h4>${body?`<div class="bd">${body}</div>`:''}</div>`; }
+function dateRange(d){ return (d.fromDate||'—') + ' ← إلى → ' + (d.toDate||'—'); }
+
+function bodyKhazna(it, edit){
+  const d = it.data, a = anaKhazna(d), id = it.id;
+  let h = `<div class="sc-grid">
+    <div class="sc-kv"><label>اسم المستخدم</label><div class="v">${hdr(id,'userName',d.userName,edit)}</div></div>
+    <div class="sc-kv"><label>الشخص في الشيفت</label><div class="v">${hdr(id,'shiftPerson',d.shiftPerson,edit)}</div></div>
+    <div class="sc-kv"><label>الفرع</label><div class="v">${hdr(id,'branch',d.branch,edit)}</div></div>
+    <div class="sc-kv"><label>التاريخ من</label><div class="v">${hdr(id,'fromDate',d.fromDate,edit)}</div></div>
+    <div class="sc-kv"><label>التاريخ إلى</label><div class="v">${hdr(id,'toDate',d.toDate,edit)}</div></div>
+    <div class="sc-kv"><label>تاريخ الطباعة</label><div class="v">${hdr(id,'printedDate',d.printedDate,edit)}</div></div>
+    <div class="sc-kv big"><label>الرصيد الفعلي</label><div class="v num">${hdr(id,'actualBalance',d.actualBalance,edit,true)}</div></div>
+  </div>`;
+
+  // 1) تسلسل الإيصالات
+  if(a.sequenceOk){
+    h += chk('ok','✅ تسلسل الإيصالات سليم', `${a.count} إيصال، من <b class="num">${a.min}</b> إلى <b class="num">${a.max}</b> — بدون تكرار أو أرقام ناقصة.`);
+  }else{
+    let b = '';
+    if(a.gaps.length) b += `<div><b>أرقام ناقصة (مش موجودة في الشيت):</b> ${a.gaps.map(g=> g.from===g.to ? `<span class="num sc-bad">${g.from}</span>` : `<span class="num sc-bad">${g.from} → ${g.to}</span>`).join('، ')}</div>`;
+    if(a.dups.length) b += `<div><b>أرقام متكررة:</b> ${a.dups.map(x=>`<span class="num sc-bad">${x.no}</span> (${x.times} مرات)`).join('، ')}</div>`;
+    if(a.unread) b += `<div><b>${a.unread}</b> صف رقمه غير مقروء/فاضي.</div>`;
+    h += chk('bad','⚠️ التسلسل غير مظبوط', b);
+  }
+
+  // 2) الدفعة = صفر
+  if(!a.zeroRows.length) h += chk('ok','✅ مفيش عملاء دفعتهم صفر','');
+  else h += chk('warn', `⚠️ عملاء الدفعة قصاد اسمهم صفر (${a.zeroRows.length})`,
+    `<table><thead><tr><th>#</th><th>رقم الإيصال</th><th>اسم العميل</th><th>الجهة</th></tr></thead><tbody>${
+      a.zeroRows.map((x,j)=>`<tr><td>${j+1}</td><td class="num">${esc(x.r.no)}</td><td>${esc(x.r.name||'—')}</td><td>${esc(x.r.party||'—')}</td></tr>`).join('')}</tbody></table>`);
+
+  // 3) تدقيق الإجماليات
+  const bad = a.audit.filter(x=>!x.ok);
+  h += chk(bad.length?'bad':'ok', bad.length ? `⚠️ تدقيق الإجماليات — ${bad.length} بند فيه فرق` : '✅ تدقيق الإجماليات — كل الأرقام متطابقة',
+    `<table><thead><tr><th>البند</th><th>المطبوع في الشيت</th><th>المحسوب من الصفوف</th><th>الفرق</th><th>الحالة</th></tr></thead><tbody>${
+      a.audit.map(x=>`<tr><td>${x.label}<div style="font-size:11px;color:var(--ink-faint)">${x.how}</div></td><td class="num">${fmt(x.printed)}</td><td class="num">${fmt(x.computed)}</td><td class="num ${x.ok?'':'sc-bad'}">${x.printed==null?'—':fmt(x.printed-x.computed)}</td><td>${x.ok?'<span class="sc-good">✔ مطابق</span>':(x.printed==null?'<span class="sc-bad">غير موجود في الصورة</span>':'<span class="sc-bad">✘ فرق</span>')}</td></tr>`).join('')}</tbody></table>
+     ${bad.length && edit ? '<div class="field-hint">لو الفرق بسبب غلطة قراءة، صحّح الخانة في الجدول تحت وهيتعاد التدقيق تلقائي.</div>':''}`);
+
+  // 4) الجدول
+  const cols = [['no','الرقم',0],['name','الاسم',0],['doctor','الطبيب',0],['datetime','تاريخ الدفعة',0],['party','الجهة',0],['total','الإجمالي',1],['cash','نقدًا',1],['visa','فيزا',1],['payment','الدفعة',1],['discount','الخصم',1],['remaining','الباقي',1],['refunds','استردادات',1]];
+  h += `<div class="section-title"><span class="dot" style="background:var(--primary)"></span>الصفوف المقروءة (${a.count})${edit?'':''}</div>
+  <div class="sc-tw"><table><thead><tr><th>#</th>${cols.map(c=>`<th>${c[1]}</th>`).join('')}${edit?'<th></th>':''}</tr></thead><tbody>${
+    d.rows.map((r,i)=>{
+      const cls = a.dupSet.has(a.nos[i]) ? 'd' : (num(r.payment)===0 ? 'z' : '');
+      return `<tr class="${cls}"><td>${i+1}</td>${cols.map(c=>`<td>${inp(id,i,c[0],r[c[0]],edit,c[2])}</td>`).join('')}${edit?`<td><button class="btn btn-danger-text" onclick="scDelRow('${id}',${i})">✕</button></td>`:''}</tr>`;
+    }).join('')}</tbody></table></div>
+  <div class="field-hint" style="margin-top:6px;">🟨 دفعة صفر &nbsp; 🟥 رقم إيصال مكرر</div>`;
+  if(edit) h += `<button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="scAddRow('${id}')">+ صف</button>`;
+  if(d.handwrittenNotes) h += `<div class="sc-chk" style="margin-top:12px;"><h4 style="background:var(--surface-alt)">✍️ ملاحظات مكتوبة بخط اليد (للعلم — راجعها على الصورة)</h4><div class="bd">${esc(d.handwrittenNotes)}</div></div>`;
+  return h;
+}
+
+function bodyExpense(it, edit){
+  const d = it.data, a = anaExpense(d), id = it.id;
+  let h = `<div class="sc-grid">
+    <div class="sc-kv"><label>الجهة / الشركة</label><div class="v">${hdr(id,'company',d.company,edit)}</div></div>
+    <div class="sc-kv"><label>العنوان</label><div class="v">${hdr(id,'title',d.title,edit)}</div></div>
+    <div class="sc-kv"><label>التاريخ</label><div class="v">${hdr(id,'date',d.date,edit)}</div></div>
+    <div class="sc-kv big"><label>إجمالي المصاريف (محسوب)</label><div class="v num">${fmt(a.total)}</div></div>
+  </div>`;
+  if(a.written==null) h += chk('warn','⚠️ مفيش إجمالي مكتوب على الورقة', `الإجمالي المحسوب من البنود: <b class="num">${fmt(a.total)}</b>` + (edit?` — لو فيه إجمالي مكتوب اكتبه: <input class="sc-in n" style="width:120px;border-color:var(--border);" onchange="scEditH('${id}','writtenTotal',this.value)">`:''));
+  else if(a.match) h += chk('ok','✅ الإجمالي مطابق', `الإجمالي المكتوب <b class="num">${fmt(a.written)}</b> = مجموع البنود <b class="num">${fmt(a.total)}</b>`);
+  else h += chk('bad','⚠️ الإجمالي المكتوب لا يطابق مجموع البنود', `المكتوب: <b class="num">${hdr(id,'writtenTotal',d.writtenTotal,edit,true)}</b> — المحسوب: <b class="num">${fmt(a.total)}</b> — الفرق: <b class="num sc-bad">${fmt(a.written-a.total)}</b>`);
+  if(a.noAmt.length) h += chk('warn',`⚠️ بنود بدون مبلغ مقروء (${a.noAmt.length})`, a.noAmt.map(x=>'• '+esc(x.r.desc||'(بدون بيان)')+` (صف ${x.i+1})`).join('<br>'));
+  if(a.noDesc.length) h += chk('warn',`⚠️ مبالغ بدون بيان (${a.noDesc.length})`, a.noDesc.map(x=>'• صف '+(x.i+1)).join('، '));
+
+  h += `<div class="section-title"><span class="dot" style="background:var(--primary)"></span>البنود المسجلة (${a.count})</div>
+  <div class="sc-tw"><table><thead><tr><th>#</th><th>البيان</th><th>المبلغ</th><th>مركز التكلفة</th><th>ملاحظات</th>${edit?'<th></th>':''}</tr></thead><tbody>${
+    d.rows.map((r,i)=>`<tr class="${num(r.amount)==null?'z':''}"><td>${i+1}</td><td>${inp(id,i,'desc',r.desc,edit)}</td><td>${inp(id,i,'amount',r.amount,edit,1)}</td><td>${inp(id,i,'costCenter',r.costCenter,edit)}</td><td>${inp(id,i,'notes',r.notes,edit)}</td>${edit?`<td><button class="btn btn-danger-text" onclick="scDelRow('${id}',${i})">✕</button></td>`:''}</tr>`).join('')}
+    <tr><td></td><td><b>إجمالي المصاريف</b></td><td class="num"><b>${fmt(a.total)}</b></td><td></td><td></td>${edit?'<td></td>':''}</tr></tbody></table></div>`;
+  if(edit) h += `<button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="scAddRow('${id}')">+ بند</button>`;
+  if(d.handwrittenNotes) h += `<div class="sc-chk" style="margin-top:12px;"><h4 style="background:var(--surface-alt)">✍️ كتابات أخرى على الورقة (للعلم — راجعها على الصورة)</h4><div class="bd">${esc(d.handwrittenNotes)}</div></div>`;
+  return h;
+}
+const bodyOf = (it,edit)=> it.type==='khazna' ? bodyKhazna(it,edit) : bodyExpense(it,edit);
+
+function render(){
+  const box = $('scResults'); if(!box) return;
+  box.innerHTML = items.map(it=>{
+    const sub = it.status==='loading' ? '<span class="sc-spin"></span> جاري القراءة والتدقيق…' : (it.status==='error' ? '<span class="sc-bad">فشلت القراءة</span>' : 'تم التحليل — راجع الأرقام على الصورة قبل الاعتماد');
+    let body = '';
+    if(it.status==='error') body = `<div class="sc-chk bad"><h4>❌ ${esc(it.err)}</h4><div class="bd"><button class="btn btn-primary btn-sm" onclick="scRetry('${it.id}')">إعادة المحاولة</button></div></div>`;
+    else if(it.status==='done') body = bodyOf(it,true);
+    return `<div class="card card-pad sc-card"><div class="sc-card-head">
+      <a href="${it.url}" target="_blank" title="فتح الصورة"><img src="${it.url}"></a>
+      <div><div class="t">${TYPE_LABEL[it.type]} — ${esc(it.name)}</div><div class="s">${sub}</div></div>
+      <div class="acts">${it.status==='done' ? `<button class="btn btn-ghost btn-sm" onclick="scXlsx('${it.id}')">⬇ Excel</button><button class="btn btn-primary btn-sm" onclick="scPdf('${it.id}')">🖨 PDF / طباعة</button>` : ''}<button class="btn btn-ghost btn-sm" onclick="scDel('${it.id}')">حذف</button></div>
+    </div>${body}</div>`;
+  }).join('');
+}
+
+/* ---------- export ---------- */
+const fname = it => (it.type==='khazna' ? 'تقرير-يومية-خزنة' : 'تقرير-تحليلي-مصروفات') + '-' + (it.type==='khazna' ? (it.data.userName||'') : (it.data.date||'')).toString().replace(/[\\/:*?"<>|\s]+/g,'-') ;
+window.scXlsx = function(id){
+  const it = find(id); if(!it) return; const d = it.data, wb = XLSX.utils.book_new(), S = [];
+  if(it.type==='khazna'){
+    const a = anaKhazna(d);
+    S.push(['تقرير يومية خزنة'],[],['اسم المستخدم',d.userName||''],['الشخص في الشيفت',d.shiftPerson||''],['الفرع',d.branch||''],['التاريخ من',d.fromDate||''],['التاريخ إلى',d.toDate||''],['تاريخ الطباعة',d.printedDate||''],['الرصيد الفعلي',num(d.actualBalance)],[]);
+    S.push(['تسلسل الإيصالات', a.sequenceOk ? 'سليم' : 'غير مظبوط']);
+    if(a.gaps.length) S.push(['أرقام ناقصة', a.gaps.map(g=>g.from===g.to?g.from:g.from+'-'+g.to).join(' ، ')]);
+    if(a.dups.length) S.push(['أرقام متكررة', a.dups.map(x=>x.no+' ('+x.times+')').join(' ، ')]);
+    S.push([],['عملاء الدفعة صفر ('+a.zeroRows.length+')'],['رقم الإيصال','اسم العميل','الجهة']);
+    a.zeroRows.forEach(x=>S.push([x.r.no||'',x.r.name||'',x.r.party||'']));
+    S.push([],['تدقيق الإجماليات'],['البند','المطبوع','المحسوب','الفرق','الحالة']);
+    a.audit.forEach(x=>S.push([x.label,x.printed,x.computed,x.printed==null?'':x.printed-x.computed,x.ok?'مطابق':'فرق']));
+    if(d.handwrittenNotes) S.push([],['ملاحظات بخط اليد',d.handwrittenNotes]);
+    const R = [['الرقم','الاسم','الطبيب','تاريخ الدفعة','الجهة','الإجمالي','نقدًا','فيزا','الدفعة','الخصم','الباقي','استردادات','ملاحظة']];
+    d.rows.forEach((r,i)=>R.push([r.no||'',r.name||'',r.doctor||'',r.datetime||'',r.party||'',num(r.total),num(r.cash),num(r.visa),num(r.payment),num(r.discount),num(r.remaining),num(r.refunds), a.dupSet.has(a.nos[i])?'رقم مكرر':(num(r.payment)===0?'دفعة صفر':'')]));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(S), 'التقرير');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(R), 'الصفوف');
+  }else{
+    const a = anaExpense(d);
+    S.push(['البيان','المبلغ','مركز التكلفة','ملاحظات']);
+    d.rows.forEach(r=>S.push([r.desc||'',num(r.amount),r.costCenter||'',r.notes||'']));
+    S.push(['إجمالي المصاريف',a.total],['الإجمالي المكتوب على الورقة',a.written],['الفرق',a.written==null?'':a.written-a.total],['التاريخ',d.date||''],['الجهة',d.company||'']);
+    if(d.handwrittenNotes) S.push(['كتابات أخرى',d.handwrittenNotes]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(S), 'تحليلي المصروفات');
+  }
+  wb.Workbook = {Views:[{RTL:true}]};
+  downloadWorkbook(wb, fname(it)+'.xlsx');
+};
+window.scPdf = function(id){
+  const it = find(id); if(!it) return;
+  const title = (it.type==='khazna'?'تقرير يومية خزنة':'تقرير تحليلي مصروفات');
+  const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${esc(fname(it))}</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+@page{size:A4 ${it.type==='khazna'?'landscape':'portrait'};margin:10mm}
+*{box-sizing:border-box} body{font-family:'IBM Plex Sans Arabic',Tahoma,sans-serif;color:#1D2B2A;font-size:11px;margin:0}
+h1{font-size:18px;margin:0 0 4px;color:#0E5C56} .sub{color:#8CA09E;font-size:10px;margin-bottom:10px}
+.num{font-family:'IBM Plex Mono',monospace;direction:ltr;unicode-bidi:isolate}
+.sc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.sc-kv{background:#EEF3F3;border-radius:6px;padding:6px 9px}.sc-kv label{display:block;font-size:9px;color:#8CA09E}.sc-kv .v{font-weight:700;font-size:11.5px}
+.sc-kv.big{background:#E3EFEC}.sc-kv.big .v{font-size:15px;color:#0A423E}
+.sc-chk{border:1px solid #DEE6E7;border-radius:6px;margin-bottom:8px;overflow:hidden;page-break-inside:avoid}
+.sc-chk h4{margin:0;padding:6px 10px;font-size:11.5px}.sc-chk.ok h4{background:#E6F3EC;color:#1E6B45}.sc-chk.bad h4{background:#F6E9E5;color:#A34632}.sc-chk.warn h4{background:#F6EEDC;color:#7A5518}
+.sc-chk .bd{padding:7px 10px;line-height:1.7}
+.section-title{font-weight:700;margin:10px 0 5px;color:#5E7371}
+table{width:100%;border-collapse:collapse;font-size:10px} th{background:#0E5C56;color:#fff;padding:5px 6px;text-align:right} td{padding:4px 6px;border-bottom:1px solid #EAEFEF}
+tr{page-break-inside:avoid} tr.z td{background:#FFF6DD} tr.d td{background:#FBE4DE}
+.sc-bad{color:#A34632;font-weight:700}.sc-good{color:#1E6B45;font-weight:700}.field-hint{font-size:9.5px;color:#8CA09E}
+.sc-tw{border:1px solid #DEE6E7;border-radius:6px;overflow:hidden}
+</style></head><body><h1>${title}</h1><div class="sub">تاريخ إعداد التقرير: ${new Date().toLocaleString('ar-EG')} — ${esc(it.name)}</div>${bodyOf(it,false)}</body></html>`;
+  const fr = document.createElement('iframe');
+  fr.style.cssText = 'position:fixed;right:-9999px;bottom:0;width:1200px;height:800px;border:0;';
+  document.body.appendChild(fr);
+  fr.srcdoc = html;
+  fr.onload = ()=>{
+    const go = ()=>{ try{ fr.contentWindow.focus(); fr.contentWindow.print(); }catch(e){ showToast('تعذر فتح الطباعة: '+e.message, true); } setTimeout(()=>fr.remove(), 60000); };
+    const w = fr.contentWindow; (w.document.fonts && w.document.fonts.ready ? w.document.fonts.ready : Promise.resolve()).then(()=>setTimeout(go,300));
+  };
+};
+
+cfgToUi(); renderPending();
+})();
 </script>
 </body>
 </html>
