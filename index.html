@@ -5379,8 +5379,8 @@ function parseJson(txt){
   if(a<0 || b<=a) throw new Error('رد غير مفهوم من الموديل');
   return JSON.parse(txt.slice(a, b+1));
 }
-async function callAI(b64, type){
-  const model = (cfg.models&&cfg.models[cfg.provider]) || DEF_MODEL[cfg.provider];
+async function callAI(b64, type, modelOv){
+  const model = modelOv || (cfg.models&&cfg.models[cfg.provider]) || DEF_MODEL[cfg.provider];
   if(cfg.provider === 'gemini'){
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':cfg.key},
@@ -5421,17 +5421,22 @@ async function process(it){
   it.status = 'loading'; it.err = ''; render();
   try{
     if(!it.b64) it.b64 = await prepImage(it.file);
-    let d, tries = 0;
-    for(;;){
-      try{ d = await callAI(it.b64, it.type); break; }
-      catch(e){
-        const m = String((e&&e.message)||e);
-        if(++tries < 5 && /\[(503|429|500)\]|high demand|overloaded/i.test(m)){
-          it.msg = 'الموديل زحمة — إعادة المحاولة ('+tries+'/4)…'; render();
-          await new Promise(r=>setTimeout(r, 4000*tries));
-        } else throw e;
+    let d = null, lastErr = null;
+    const main = (cfg.models&&cfg.models[cfg.provider]) || DEF_MODEL[cfg.provider];
+    const list = cfg.provider==='gemini' ? [main,'gemini-flash-latest','gemini-flash-lite-latest'].filter((m,k,a)=>a.indexOf(m)===k) : [main];
+    outer: for(const mdl of list){
+      for(let tries=1; tries<=3; tries++){
+        try{ d = await callAI(it.b64, it.type, mdl); break outer; }
+        catch(e){
+          lastErr = e; const m = String((e&&e.message)||e);
+          if(!/\[(503|429|500|404)\]|high demand|overloaded|no longer available/i.test(m)) throw e;
+          if(/\[404\]|no longer available/i.test(m)) break;
+          it.msg = 'الموديل '+mdl+' زحمة — محاولة '+tries+'/3…'; render();
+          await new Promise(r=>setTimeout(r, 3000*tries));
+        }
       }
     }
+    if(!d) throw lastErr || new Error('فشلت القراءة');
     it.msg = ''; it.data = normalize(it.type, d); it.status = 'done';
   }catch(e){ it.status = 'error'; it.err = (e&&e.message) || String(e); }
   render();
