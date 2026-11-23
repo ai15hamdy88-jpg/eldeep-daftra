@@ -5421,7 +5421,18 @@ async function process(it){
   it.status = 'loading'; it.err = ''; render();
   try{
     if(!it.b64) it.b64 = await prepImage(it.file);
-    it.data = normalize(it.type, await callAI(it.b64, it.type)); it.status = 'done';
+    let d, tries = 0;
+    for(;;){
+      try{ d = await callAI(it.b64, it.type); break; }
+      catch(e){
+        const m = String((e&&e.message)||e);
+        if(++tries < 5 && /\[(503|429|500)\]|high demand|overloaded/i.test(m)){
+          it.msg = 'الموديل زحمة — إعادة المحاولة ('+tries+'/4)…'; render();
+          await new Promise(r=>setTimeout(r, 4000*tries));
+        } else throw e;
+      }
+    }
+    it.msg = ''; it.data = normalize(it.type, d); it.status = 'done';
   }catch(e){ it.status = 'error'; it.err = (e&&e.message) || String(e); }
   render();
 }
@@ -5559,7 +5570,7 @@ const bodyOf = (it,edit)=> it.type==='khazna' ? bodyKhazna(it,edit) : bodyExpens
 function render(){
   const box = $('scResults'); if(!box) return;
   box.innerHTML = items.map(it=>{
-    const sub = it.status==='loading' ? '<span class="sc-spin"></span> جاري القراءة والتدقيق…' : (it.status==='error' ? '<span class="sc-bad">فشلت القراءة</span>' : 'تم التحليل — راجع الأرقام على الصورة قبل الاعتماد');
+    const sub = it.status==='loading' ? '<span class="sc-spin"></span> '+(it.msg||'جاري القراءة والتدقيق…') : (it.status==='error' ? '<span class="sc-bad">فشلت القراءة</span>' : 'تم التحليل — راجع الأرقام على الصورة قبل الاعتماد');
     let body = '';
     if(it.status==='error') body = `<div class="sc-chk bad"><h4>❌ ${esc(it.err)}</h4><div class="bd"><button class="btn btn-primary btn-sm" onclick="scRetry('${it.id}')">إعادة المحاولة</button></div></div>`;
     else if(it.status==='done') body = bodyOf(it,true);
