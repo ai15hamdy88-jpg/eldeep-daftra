@@ -5284,6 +5284,9 @@ const CFG_KEY = 'daftara_scan_cfg_v1';
 const DEF_MODEL = {gemini:'gemini-2.5-flash', claude:'claude-sonnet-5-5'};
 let cfg = {provider:'gemini', key:'', models:{}};
 try{ const s = JSON.parse(localStorage.getItem(CFG_KEY)||'null'); if(s) cfg = Object.assign(cfg, s); }catch(e){}
+/* ===== ضع مفتاحك هنا مرة واحدة (provider: 'gemini' أو 'claude') — لو اتملى، صفحة قراءة الصور بتشتغل من غير أي إعدادات ===== */
+const BUILTIN = {provider:'gemini', key:'', model:''};
+if(BUILTIN.key){ cfg = {provider:BUILTIN.provider, key:BUILTIN.key, models:{[BUILTIN.provider]: BUILTIN.model || DEF_MODEL[BUILTIN.provider]}}; }
 let scType = 'khazna', pending = [], items = [], seq = 0;
 
 const $ = id => document.getElementById(id);
@@ -5305,6 +5308,7 @@ function cfgToUi(){
   $('scModel').value = (cfg.models&&cfg.models[cfg.provider]) || DEF_MODEL[cfg.provider];
 }
 window.scSaveCfg = function(){
+  if(BUILTIN.key) return;
   cfg.provider = $('scProv').value; cfg.key = $('scKey').value.trim();
   cfg.models = cfg.models||{}; cfg.models[cfg.provider] = $('scModel').value.trim() || DEF_MODEL[cfg.provider];
   try{ localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); }catch(e){}
@@ -5628,7 +5632,7 @@ tr{page-break-inside:avoid} tr.z td{background:#FFF6DD} tr.d td{background:#FBE4
   };
 };
 
-cfgToUi(); renderPending();
+cfgToUi(); renderPending(); if(BUILTIN.key){ $('scCfgBox').style.display='none'; }
 })();
 </script>
 </body>
